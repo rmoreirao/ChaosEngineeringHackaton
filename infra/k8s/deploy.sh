@@ -73,6 +73,18 @@ echo ""
 echo ">>> Deploying Observability stack..."
 kubectl apply -f "$K8S_DIR/observability/prometheus/"
 kubectl apply -f "$K8S_DIR/observability/loki/"
+kubectl apply -f "$K8S_DIR/observability/postgres-exporter/"
+
+# Create Grafana dashboard ConfigMap from JSON files
+DASHBOARD_DIR="$SCRIPT_DIR/../../infra/observability/grafana/provisioning/dashboards"
+kubectl delete configmap grafana-dashboard-files -n oranje-markt 2>/dev/null || true
+kubectl create configmap grafana-dashboard-files \
+  --from-file="$DASHBOARD_DIR/app-dashboard.json" \
+  --from-file="$DASHBOARD_DIR/db-dashboard.json" \
+  --from-file="$DASHBOARD_DIR/frontend-dashboard.json" \
+  --from-file="$DASHBOARD_DIR/infra-dashboard.json" \
+  -n oranje-markt
+
 kubectl apply -f "$K8S_DIR/observability/grafana/"
 kubectl apply -f "$K8S_DIR/observability/promtail/"
 

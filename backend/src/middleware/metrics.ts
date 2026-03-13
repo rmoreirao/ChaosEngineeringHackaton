@@ -25,6 +25,13 @@ export const ordersTotal = new client.Counter({
   registers: [register],
 });
 
+export const cartOperationsTotal = new client.Counter({
+  name: 'cart_operations_total',
+  help: 'Total number of cart operations',
+  labelNames: ['operation'],
+  registers: [register],
+});
+
 export const dbQueryDuration = new client.Histogram({
   name: 'db_query_duration_seconds',
   help: 'Duration of database queries in seconds',

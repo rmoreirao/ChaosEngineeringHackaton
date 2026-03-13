@@ -1,7 +1,7 @@
 import { Router, Response, NextFunction } from 'express';
 import { prisma } from '../lib/prisma';
 import { requireAuth, AuthenticatedRequest } from '../middleware/auth';
-import { ordersTotal } from '../middleware/metrics';
+import { ordersTotal, cartOperationsTotal } from '../middleware/metrics';
 import logger from '../lib/logger';
 
 const router = Router();
@@ -73,6 +73,7 @@ router.post('/', requireAuth, async (req: AuthenticatedRequest, res: Response, n
     });
 
     ordersTotal.inc();
+    cartOperationsTotal.inc({ operation: 'checkout' });
     logger.info({ orderId: order.id, userId, total }, 'Order placed');
 
     res.status(201).json({ success: true, orderId: order.id });

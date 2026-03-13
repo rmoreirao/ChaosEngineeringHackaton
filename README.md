@@ -135,7 +135,55 @@ curl http://localhost:4000/api/health
 
 # Backend metrics (Prometheus format)
 curl http://localhost:4000/api/metrics
+
+# Frontend metrics (Prometheus format)
+curl http://localhost:3000/api/metrics
 ```
+
+## Observability
+
+Full-stack observability with metrics, logs, and dashboards across all three tiers.
+
+### Metrics Pipeline
+
+```
+┌─────────────┐     /api/metrics      ┌────────────┐     scrape      ┌────────────┐
+│   Frontend   │ ◄──────────────────── │ Prometheus │ ──────────────► │  Grafana   │
+│  (prom-client)│                      │            │                 │ 4 dashboards│
+├─────────────┤     /api/metrics      │            │                 └────────────┘
+│   Backend    │ ◄──────────────────── │            │
+│  (prom-client)│                      │            │
+├─────────────┤     :9187/metrics     │            │
+│  PostgreSQL  │ ◄──────────────────── │            │
+│  (pg-exporter)│                      └────────────┘
+└─────────────┘
+
+┌─────────────┐     Web Vitals        ┌────────────┐
+│   Browser    │ ──────────────────►   │  Frontend  │  (bridges client metrics
+│  (client JS) │   /api/report-metrics │  server    │   into Prometheus)
+└─────────────┘                        └────────────┘
+```
+
+### What's Collected
+
+| Source | Metrics | How |
+|--------|---------|-----|
+| **Backend** | HTTP request rate/latency, error rate, orders total, cart operations, DB query duration by operation | `prom-client` + Prisma middleware |
+| **Frontend (SSR)** | SSR request count/duration, Node.js process metrics (CPU, memory, event loop, GC) | `prom-client` + Next.js middleware |
+| **Frontend (Browser)** | Web Vitals (LCP, FID, CLS, TTFB), page views, client JS errors, cart operations | PerformanceObserver → `/api/report-metrics` bridge |
+| **PostgreSQL** | Connections, transactions/sec, cache hit ratio, row operations, table sizes, locks | `postgres-exporter` |
+| **Logs** | Structured JSON logs from all containers | Promtail → Loki → Grafana |
+
+### Grafana Dashboards
+
+| Dashboard | What It Shows |
+|-----------|---------------|
+| **Application** | HTTP rates, latency p50/p95/p99, error rate, orders, cart ops, response codes, app logs |
+| **Database** | Active connections, TPS, cache hit ratio, rows fetched, table sizes, locks, DB logs |
+| **Frontend** | SSR request rate/latency, Web Vitals (LCP/FID/CLS/TTFB), client errors, page views |
+| **Infrastructure** | CPU usage, memory (RSS), event loop lag, active handles, GC duration for backend + frontend |
+
+Access Grafana at http://localhost:3001 (admin/admin).
 
 ## Environment Variables
 
@@ -260,3 +308,68 @@ kubectl describe pod <pod-name> -n oranje-markt
 | Metrics         | prom-client (Prometheus format)               |
 | Monitoring      | Prometheus, Grafana, Loki, Promtail           |
 | Containerization| Docker, Docker Compose                        |
+| Testing         | Playwright (E2E + Load)                       |
+
+## Testing
+
+The project includes Playwright-based E2E tests and a load testing runner under `tests/`.
+
+### Prerequisites
+
+- Frontend running on `http://localhost:3000`
+- Backend running on `http://localhost:4000`
+- Database seeded with test data
+
+### Setup
+
+```bash
+cd tests
+npm install
+npx playwright install chromium
+```
+
+### E2E Tests
+
+Run all 5 scenario tests:
+
+```bash
+cd tests
+npx playwright test
+```
+
+| Scenario | Description |
+|----------|-------------|
+| 01 - Browse Products | Homepage → category → product detail |
+| 02 - Search Products | Search and verify results |
+| 03 - Register & Login | Register, logout, login |
+| 04 - Cart & Checkout | Full purchase flow (add to cart → checkout → verify order) |
+| 05 - Unauth Redirect | Protected pages require login |
+
+Other useful commands:
+
+```bash
+npx playwright test --headed          # Watch tests in browser
+npx playwright test --debug           # Step-through debugger
+npx playwright test e2e/01-browse-products.spec.ts  # Run a single scenario
+```
+
+### Load Tests
+
+The load runner spawns N concurrent browser contexts running the same scenario flows used by E2E tests.
+
+```bash
+cd tests
+npx tsx load/load-test.ts --scenario=browse --users=5 --duration=60
+```
+
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `--scenario` | `browse` | Scenario to run: `browse`, `search`, `register`, `checkout`, `unauth` |
+| `--users` | `5` | Number of concurrent browser contexts |
+| `--duration` | `60` | Test duration in seconds |
+
+**Recommended load mix:**
+- 60% browsing (`browse` + `search`) — read-only, safe at high concurrency
+- 10% registration (`register`) — creates users, use unique emails per run
+- 25% purchase (`checkout`) — full purchase funnel, measures end-to-end latency
+- 5% auth redirect (`unauth`) — lightweight auth middleware check

@@ -1,0 +1,14 @@
+{
+  "name": "oranje-markt-tests",
+  "private": true,
+  "scripts": {
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "test:debug": "playwright test --debug",
+    "load": "tsx load/load-test.ts"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.52.0",
+    "tsx": "^4.19.0"
+  }
+}

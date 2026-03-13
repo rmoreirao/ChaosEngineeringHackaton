@@ -4,6 +4,7 @@ import { CartProvider } from '@/components/cart/CartProvider';
 import Navbar from '@/components/layout/Navbar';
 import CategoryBar from '@/components/layout/CategoryBar';
 import Footer from '@/components/layout/Footer';
+import WebVitalsReporter from '@/components/WebVitalsReporter';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -21,6 +22,7 @@ export default function RootLayout({
       <body className="bg-white text-gray-900 min-h-screen flex flex-col">
         <AuthProvider>
           <CartProvider>
+            <WebVitalsReporter />
             <Navbar />
             <CategoryBar />
             <main className="flex-1">{children}</main>

@@ -34,6 +34,8 @@ spec:
             - name: dashboards-provider
               mountPath: /etc/grafana/provisioning/dashboards/dashboards.yml
               subPath: dashboards.yml
+            - name: dashboard-files
+              mountPath: /etc/grafana/provisioning/dashboards/json
             - name: data
               mountPath: /var/lib/grafana
           resources:
@@ -50,5 +52,8 @@ spec:
         - name: dashboards-provider
           configMap:
             name: grafana-dashboards-provider
+        - name: dashboard-files
+          configMap:
+            name: grafana-dashboard-files
         - name: data
           emptyDir: {}

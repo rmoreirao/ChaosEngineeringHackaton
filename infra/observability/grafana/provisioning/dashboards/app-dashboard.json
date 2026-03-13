@@ -7,37 +7,51 @@
   "links": [],
   "panels": [
     {
-      "title": "Request Rate (req/s)",
+      "id": 1,
+      "title": "Request Rate",
       "type": "timeseries",
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
-          "expr": "rate(http_requests_total{app=\"oranje-markt\"}[5m])",
-          "legendFormat": "{{method}} {{route}} {{status}}",
-          "refId": "A"
+          "refId": "A",
+          "expr": "rate(http_requests_total[5m])",
+          "legendFormat": "{{method}} {{route}} {{status}}"
         }
       ],
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "fieldConfig": {
-        "defaults": { "unit": "reqps", "color": { "mode": "palette-classic" } },
+        "defaults": {
+          "unit": "reqps",
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "fillOpacity": 10,
+            "lineWidth": 2,
+            "drawStyle": "line"
+          }
+        },
         "overrides": []
-      }
+      },
+      "options": {}
     },
     {
-      "title": "Error Rate",
+      "id": 2,
+      "title": "Error Rate %",
       "type": "stat",
-      "gridPos": { "h": 8, "w": 6, "x": 12, "y": 0 },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
+          "refId": "A",
           "expr": "sum(rate(http_requests_total{status=~\"5..\"}[5m])) / sum(rate(http_requests_total[5m])) * 100",
-          "refId": "A"
+          "legendFormat": ""
         }
       ],
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "fieldConfig": {
         "defaults": {
           "unit": "percent",
+          "color": { "mode": "thresholds" },
           "thresholds": {
+            "mode": "absolute",
             "steps": [
               { "color": "green", "value": null },
               { "color": "yellow", "value": 1 },
@@ -46,98 +60,185 @@
           }
         },
         "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": ["lastNotNull"]
+        }
       }
     },
     {
+      "id": 3,
       "title": "Orders Total",
       "type": "stat",
-      "gridPos": { "h": 8, "w": 6, "x": 18, "y": 0 },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
+          "refId": "A",
           "expr": "orders_total",
-          "refId": "A"
+          "legendFormat": ""
         }
       ],
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "fieldConfig": {
         "defaults": {
-          "color": { "mode": "fixed", "fixedColor": "#FF6B00" },
-          "thresholds": { "steps": [{ "color": "orange", "value": null }] }
+          "unit": "short",
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null }
+            ]
+          }
         },
         "overrides": []
-      }
-    },
-    {
-      "title": "Request Latency (p95)",
-      "type": "timeseries",
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
-      "targets": [
-        {
-          "expr": "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{app=\"oranje-markt\"}[5m]))",
-          "legendFormat": "p95",
-          "refId": "A"
-        },
-        {
-          "expr": "histogram_quantile(0.50, rate(http_request_duration_seconds_bucket{app=\"oranje-markt\"}[5m]))",
-          "legendFormat": "p50",
-          "refId": "B"
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": ["lastNotNull"]
         }
-      ],
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "fieldConfig": {
-        "defaults": { "unit": "s" },
-        "overrides": []
       }
     },
     {
-      "title": "Cart Operations",
+      "id": 4,
+      "title": "Request Latency p50/p95/p99",
       "type": "timeseries",
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
-          "expr": "rate(cart_operations_total[5m])",
-          "legendFormat": "{{operation}}",
-          "refId": "A"
+          "refId": "A",
+          "expr": "histogram_quantile(0.5, sum by (le) (rate(http_request_duration_seconds_bucket[5m])))",
+          "legendFormat": "p50"
+        },
+        {
+          "refId": "B",
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket[5m])))",
+          "legendFormat": "p95"
+        },
+        {
+          "refId": "C",
+          "expr": "histogram_quantile(0.99, sum by (le) (rate(http_request_duration_seconds_bucket[5m])))",
+          "legendFormat": "p99"
         }
       ],
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "fieldConfig": {
-        "defaults": { "unit": "ops" },
+        "defaults": {
+          "unit": "s",
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "fillOpacity": 10,
+            "lineWidth": 2
+          }
+        },
         "overrides": []
-      }
+      },
+      "options": {}
     },
     {
-      "title": "DB Query Latency",
+      "id": 5,
+      "title": "Cart Operations",
       "type": "timeseries",
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 16 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
-          "expr": "histogram_quantile(0.95, rate(db_query_duration_seconds_bucket[5m]))",
-          "legendFormat": "p95 {{operation}}",
-          "refId": "A"
+          "refId": "A",
+          "expr": "rate(cart_operations_total[5m])",
+          "legendFormat": "backend {{operation}}"
+        },
+        {
+          "refId": "B",
+          "expr": "rate(frontend_cart_operations_total[5m])",
+          "legendFormat": "frontend {{operation}}"
         }
       ],
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "fieldConfig": {
-        "defaults": { "unit": "s" },
+        "defaults": {
+          "unit": "ops",
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "fillOpacity": 10,
+            "lineWidth": 2
+          }
+        },
         "overrides": []
+      },
+      "options": {}
+    },
+    {
+      "id": 6,
+      "title": "DB Query Latency p95",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 16 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "histogram_quantile(0.95, sum by (le, operation) (rate(db_query_duration_seconds_bucket[5m])))",
+          "legendFormat": "{{operation}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "fillOpacity": 10,
+            "lineWidth": 2
+          }
+        },
+        "overrides": []
+      },
+      "options": {}
+    },
+    {
+      "id": 7,
+      "title": "Response Status Codes",
+      "type": "piechart",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 24 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (status) (http_requests_total)",
+          "legendFormat": "{{status}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" }
+        },
+        "overrides": []
+      },
+      "options": {
+        "pieType": "pie",
+        "legend": {
+          "displayMode": "list",
+          "placement": "right"
+        }
       }
     },
     {
+      "id": 8,
       "title": "Application Logs",
       "type": "logs",
-      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 24 },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 24 },
+      "datasource": { "type": "loki", "uid": "loki" },
       "targets": [
         {
-          "expr": "{container=\"oranje-markt-app\"}",
-          "refId": "A"
+          "refId": "A",
+          "expr": "{app=~\"oranje-markt.*\"}"
         }
       ],
-      "datasource": { "type": "loki", "uid": "loki" },
       "options": {
         "showTime": true,
-        "sortOrder": "Descending",
-        "enableLogDetails": true
+        "showLabels": true,
+        "showCommonLabels": false,
+        "wrapLogMessage": true,
+        "prettifyLogMessage": false,
+        "enableLogDetails": true,
+        "sortOrder": "Descending"
       }
     }
   ],
@@ -145,6 +246,10 @@
   "tags": ["oranje-markt"],
   "templating": { "list": [] },
   "time": { "from": "now-1h", "to": "now" },
-  "title": "Oranje Markt — Application Dashboard",
-  "uid": "oranje-markt-dashboard"
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "Oranje Markt \u2014 Application",
+  "uid": "oranje-markt-app",
+  "version": 1,
+  "refresh": "10s"
 }

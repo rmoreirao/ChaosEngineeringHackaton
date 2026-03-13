@@ -3,6 +3,19 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { CartItem, CartState } from '@/types';
 
+function reportCartOperation(operation: string) {
+  try {
+    if (typeof navigator !== 'undefined' && navigator.sendBeacon) {
+      navigator.sendBeacon(
+        '/api/report-metrics',
+        new Blob([JSON.stringify({ type: 'cart-operation', name: operation })], {
+          type: 'application/json',
+        })
+      );
+    }
+  } catch {}
+}
+
 interface CartContextType extends CartState {
   addItem: (item: CartItem) => void;
   removeItem: (id: string) => void;
@@ -33,6 +46,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, [items, isLoaded]);
 
   const addItem = (item: CartItem) => {
+    reportCartOperation('add');
     setItems((prev) => {
       const existing = prev.find((i) => i.id === item.id);
       if (existing) {
@@ -45,10 +59,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
   };
 
   const removeItem = (id: string) => {
+    reportCartOperation('remove');
     setItems((prev) => prev.filter((i) => i.id !== id));
   };
 
   const updateQuantity = (id: string, quantity: number) => {
+    reportCartOperation('update_quantity');
     if (quantity <= 0) {
       removeItem(id);
       return;
@@ -58,7 +74,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
     );
   };
 
-  const clearCart = () => setItems([]);
+  const clearCart = () => {
+    reportCartOperation('clear');
+    setItems([]);
+  };
 
   const totalItems = items.reduce((sum, i) => sum + i.quantity, 0);
   const totalPrice = items.reduce((sum, i) => sum + i.price * i.quantity, 0);

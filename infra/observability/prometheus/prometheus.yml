@@ -10,6 +10,19 @@ scrape_configs:
         labels:
           app: 'oranje-markt-backend'
 
+  - job_name: 'oranje-markt-frontend'
+    metrics_path: '/api/metrics'
+    static_configs:
+      - targets: ['app:3000']
+        labels:
+          app: 'oranje-markt-frontend'
+
+  - job_name: 'postgres-exporter'
+    static_configs:
+      - targets: ['postgres-exporter:9187']
+        labels:
+          app: 'oranje-markt-db'
+
   - job_name: 'prometheus'
     static_configs:
       - targets: ['localhost:9090']
