@@ -9,51 +9,75 @@ A full-stack Dutch specialty e-commerce application built for the Chaos Engineer
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                        Docker Compose                           │
-│                                                                 │
-│  ┌──────────────┐     HTTP      ┌──────────────┐               │
-│  │   Frontend   │◄────────────► │   Backend    │               │
-│  │   (Next.js)  │               │  (Express)   │               │
-│  │   :3000      │               │   :4000      │               │
-│  └──────────────┘               └──────┬───────┘               │
-│                                        │                        │
-│                                        ▼                        │
-│                                 ┌──────────────┐               │
-│                                 │  PostgreSQL  │               │
-│                                 │   :5432      │               │
-│                                 └──────────────┘               │
-│                                                                 │
-│  ┌──────────────────────────────────────────────────────────┐  │
-│  │                    Observability                          │  │
-│  │  Prometheus (:9090)  →  Grafana (:3001)                  │  │
-│  │  Loki (:3100)        →  Promtail (log collector)         │  │
-│  └──────────────────────────────────────────────────────────┘  │
-└─────────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────────┐
+│                            Docker Compose                                │
+│                                                                          │
+│  ┌──────────────┐     HTTP      ┌──────────────┐                        │
+│  │   Frontend   │◄────────────► │   Backend    │                        │
+│  │   (Next.js)  │               │  (Express)   │                        │
+│  │   :3000      │               │   :4000      │                        │
+│  └──────┬───────┘               └──────┬───────┘                        │
+│         │                              │                                 │
+│         │ Web Vitals                   ▼                                 │
+│         │ /api/report-metrics   ┌──────────────┐                        │
+│         └─────────────────────► │  PostgreSQL  │                        │
+│                                 │   :5432      │                        │
+│                                 └──────┬───────┘                        │
+│                                        │                                 │
+│  ┌──────────────────────────────────────┴─────────────────────────────┐  │
+│  │                       Observability                                │  │
+│  │  Prometheus (:9090) ◄── Backend :4000/api/metrics                  │  │
+│  │                     ◄── Frontend :3000/api/metrics                  │  │
+│  │                     ◄── Postgres-Exporter :9187/metrics             │  │
+│  │  Grafana (:3001)    ◄── 4 dashboards (App, DB, Frontend, Infra)    │  │
+│  │  Loki (:3100)       ◄── Promtail (container log collector)         │  │
+│  └────────────────────────────────────────────────────────────────────┘  │
+└──────────────────────────────────────────────────────────────────────────┘
 ```
 
-**Frontend** — Server-rendered React app (Next.js) with Tailwind CSS. Provides the shopping UI with SSR for SEO and fast page loads.
+**Frontend** — Server-rendered React app (Next.js 16) with Tailwind CSS 4. Provides the shopping UI with SSR, plus client-side Web Vitals tracking (LCP, FID, CLS, TTFB) and cart operation metrics.
 
-**Backend** — REST API (Express.js + TypeScript) handling authentication, products, categories, and orders. Uses JWT tokens and Prisma ORM.
+**Backend** — REST API (Express.js + TypeScript) handling authentication, products, categories, and orders. Uses JWT tokens, Prisma ORM with query-level performance instrumentation, and prom-client for Prometheus metrics.
 
-**Database** — PostgreSQL 16 storing users, products, categories, and orders. Auto-migrated and seeded on startup.
+**Database** — PostgreSQL 16 storing users, products, categories, and orders. Auto-migrated and seeded on startup. Monitored via postgres-exporter for connection, transaction, and cache metrics.
 
-**Observability** — Full monitoring stack: Prometheus scrapes backend metrics, Grafana for dashboards, Loki + Promtail for centralized log collection.
+**Observability** — Full three-tier monitoring: Prometheus scrapes metrics from backend, frontend, and postgres-exporter. Grafana provides 4 pre-built dashboards. Loki + Promtail for centralized structured log collection.
 
 ## Project Structure
 
 ```
-├── frontend/        # Next.js frontend application
-├── backend/         # Express.js REST API
-├── infra/           # Docker Compose + observability configs
+├── .devcontainer/       # Codespaces config (k3d + kubectl)
+├── frontend/            # Next.js frontend application
+│   └── src/
+│       ├── app/api/     # /api/metrics + /api/report-metrics endpoints
+│       ├── components/  # WebVitalsReporter, CartProvider (instrumented)
+│       └── lib/         # prom-client metrics registry
+├── backend/             # Express.js REST API
+│   └── src/
+│       ├── middleware/   # HTTP metrics, auth, error handling
+│       └── lib/         # Prisma client (with query duration middleware)
+├── infra/               # Infrastructure configs
 │   ├── docker-compose.yml
-│   └── observability/
-│       ├── grafana/
-│       ├── prometheus/
+│   ├── k8s/             # Kubernetes manifests for k3d/Codespaces
+│   │   ├── deploy.sh    # One-command k3d deploy
+│   │   ├── teardown.sh
+│   │   ├── postgres/    # StatefulSet, PVC, Secret, Service
+│   │   ├── backend/     # Deployment, ConfigMap, Service
+│   │   ├── frontend/    # Deployment, Service
+│   │   └── observability/
+│   │       ├── prometheus/
+│   │       ├── grafana/
+│   │       ├── loki/
+│   │       ├── promtail/
+│   │       └── postgres-exporter/
+│   └── observability/   # Docker Compose observability configs
+│       ├── grafana/     # Datasources + 4 dashboard JSONs
+│       ├── prometheus/  # Scrape config (backend, frontend, pg-exporter)
 │       ├── loki/
 │       └── promtail/
-├── docs/            # Documentation and screenshots
-└── archive/         # Archived/deprecated materials
+├── tests/               # Playwright E2E + load tests
+├── docs/                # Documentation and screenshots
+└── archive/             # Archived/deprecated materials
 ```
 
 ## Getting Started
@@ -75,8 +99,8 @@ docker compose up --build -d
 This will:
 1. Start PostgreSQL and wait for it to be healthy
 2. Build and start the backend (runs database migrations and seeds automatically)
-3. Build and start the frontend
-4. Start the observability stack (Prometheus, Grafana, Loki, Promtail)
+3. Build and start the frontend (with SSR metrics + Web Vitals tracking)
+4. Start the observability stack (Prometheus, Grafana, Loki, Promtail, Postgres-Exporter)
 
 To stop all services:
 
@@ -118,14 +142,15 @@ npm run dev
 
 ## Accessing the Services
 
-| Service        | URL                          | Credentials              |
-|----------------|------------------------------|--------------------------|
-| **Frontend**   | http://localhost:3000         | Register a new account   |
-| **Backend API**| http://localhost:4000         | —                        |
-| **Grafana**    | http://localhost:3001         | `admin` / `admin`        |
-| **Prometheus** | http://localhost:9090         | —                        |
-| **Loki**       | http://localhost:3100         | —                        |
-| **PostgreSQL** | `localhost:5432`             | `oranje` / `oranje123` (db: `oranjedb`) |
+| Service              | URL                          | Credentials              |
+|----------------------|------------------------------|--------------------------|
+| **Frontend**         | http://localhost:3000         | Register a new account   |
+| **Backend API**      | http://localhost:4000         | —                        |
+| **Grafana**          | http://localhost:3001         | `admin` / `admin`        |
+| **Prometheus**       | http://localhost:9090         | —                        |
+| **Loki**             | http://localhost:3100         | —                        |
+| **Postgres Exporter**| http://localhost:9187/metrics | —                        |
+| **PostgreSQL**       | `localhost:5432`             | `oranje` / `oranje123` (db: `oranjedb`) |
 
 ### Quick Health Check
 
@@ -138,6 +163,9 @@ curl http://localhost:4000/api/metrics
 
 # Frontend metrics (Prometheus format)
 curl http://localhost:3000/api/metrics
+
+# Postgres exporter metrics
+curl http://localhost:9187/metrics
 ```
 
 ## Observability
@@ -147,41 +175,46 @@ Full-stack observability with metrics, logs, and dashboards across all three tie
 ### Metrics Pipeline
 
 ```
-┌─────────────┐     /api/metrics      ┌────────────┐     scrape      ┌────────────┐
-│   Frontend   │ ◄──────────────────── │ Prometheus │ ──────────────► │  Grafana   │
-│  (prom-client)│                      │            │                 │ 4 dashboards│
-├─────────────┤     /api/metrics      │            │                 └────────────┘
-│   Backend    │ ◄──────────────────── │            │
-│  (prom-client)│                      │            │
-├─────────────┤     :9187/metrics     │            │
-│  PostgreSQL  │ ◄──────────────────── │            │
-│  (pg-exporter)│                      └────────────┘
+                          ┌─────────────┐
+  ┌────────────────────── │ Prometheus  │ ──────────────────┐
+  │   scrape /api/metrics │   :9090     │ scrape :9187      │
+  ▼                       └──────┬──────┘                   ▼
+┌─────────────┐                  │ scrape           ┌────────────────┐
+│   Backend   │                  │ /api/metrics     │  Postgres      │
+│   :4000     │                  ▼                  │  Exporter      │
+│ prom-client │           ┌─────────────┐           │  :9187         │
+└─────────────┘           │  Frontend   │           └────────────────┘
+                          │   :3000     │
+┌─────────────┐           │ prom-client │           ┌────────────────┐
+│   Browser   │ ────────► │             │           │   Grafana      │
+│  Web Vitals │  POST     └─────────────┘           │   :3001        │
+│  Cart ops   │  /api/report-metrics                │ 4 dashboards   │
+│  Errors     │                                     └────────────────┘
 └─────────────┘
-
-┌─────────────┐     Web Vitals        ┌────────────┐
-│   Browser    │ ──────────────────►   │  Frontend  │  (bridges client metrics
-│  (client JS) │   /api/report-metrics │  server    │   into Prometheus)
-└─────────────┘                        └────────────┘
+                          ┌─────────────┐           ┌────────────────┐
+                          │  Promtail   │ ────────► │   Loki         │
+                          │ log shipper │           │   :3100        │
+                          └─────────────┘           └────────────────┘
 ```
 
 ### What's Collected
 
 | Source | Metrics | How |
 |--------|---------|-----|
-| **Backend** | HTTP request rate/latency, error rate, orders total, cart operations, DB query duration by operation | `prom-client` + Prisma middleware |
-| **Frontend (SSR)** | SSR request count/duration, Node.js process metrics (CPU, memory, event loop, GC) | `prom-client` + Next.js middleware |
-| **Frontend (Browser)** | Web Vitals (LCP, FID, CLS, TTFB), page views, client JS errors, cart operations | PerformanceObserver → `/api/report-metrics` bridge |
-| **PostgreSQL** | Connections, transactions/sec, cache hit ratio, row operations, table sizes, locks | `postgres-exporter` |
+| **Backend** | HTTP request rate/latency/errors, orders total, cart checkout operations, DB query duration per Prisma model+action | `prom-client` + Prisma `$use` middleware |
+| **Frontend (SSR)** | SSR request count, Node.js process metrics (CPU, memory, event loop lag, GC) | `prom-client` + Next.js instrumentation hook |
+| **Frontend (Browser)** | Web Vitals (LCP, FID, CLS, TTFB) as histograms, page views by route, client JS errors, cart operations (add/remove/update/clear) | PerformanceObserver → `/api/report-metrics` bridge |
+| **PostgreSQL** | Active/idle connections, transactions/sec, cache hit ratio, rows fetched/returned, table sizes, locks | `postgres-exporter` scraping `pg_stat_*` views |
 | **Logs** | Structured JSON logs from all containers | Promtail → Loki → Grafana |
 
 ### Grafana Dashboards
 
 | Dashboard | What It Shows |
 |-----------|---------------|
-| **Application** | HTTP rates, latency p50/p95/p99, error rate, orders, cart ops, response codes, app logs |
-| **Database** | Active connections, TPS, cache hit ratio, rows fetched, table sizes, locks, DB logs |
-| **Frontend** | SSR request rate/latency, Web Vitals (LCP/FID/CLS/TTFB), client errors, page views |
-| **Infrastructure** | CPU usage, memory (RSS), event loop lag, active handles, GC duration for backend + frontend |
+| **Application** | HTTP request rate by route/method/status, error rate %, orders total, latency p50/p95/p99, cart operations (backend + frontend), DB query latency by Prisma operation, response status code breakdown, application logs |
+| **Database** | Active connections (by state), transactions/sec, cache hit ratio %, rows fetched vs returned, table sizes, lock activity, database logs |
+| **Frontend** | SSR request rate by route, SSR latency p95, Web Vitals p75/p95 (LCP/FID/CLS/TTFB), client-side JS errors, page views by route |
+| **Infrastructure** | Backend + frontend CPU usage, memory (RSS), event loop lag, active handles, GC duration |
 
 Access Grafana at http://localhost:3001 (admin/admin).
 
@@ -227,7 +260,7 @@ This will:
 1. Create a k3d cluster named `oranje-markt`
 2. Build the backend and frontend Docker images
 3. Import images into the k3d cluster
-4. Deploy PostgreSQL, Backend, Frontend, and the full observability stack
+4. Deploy PostgreSQL, Backend, Frontend, and the full observability stack (Prometheus, Grafana, Loki, Promtail, Postgres-Exporter)
 5. Set up port-forwarding so services are accessible on localhost
 
 ### Quick Start (Local with k3d)
@@ -271,29 +304,30 @@ kubectl describe pod <pod-name> -n oranje-markt
 ### K8s Architecture
 
 ```
-┌────────────────────────────────────────────────────────────────────┐
-│                     k3d Cluster (oranje-markt)                     │
-│                     Namespace: oranje-markt                        │
-│                                                                    │
-│  ┌──────────────┐     HTTP      ┌──────────────┐                  │
-│  │  Frontend     │◄────────────►│   Backend    │                  │
-│  │  Deployment   │              │  Deployment  │                  │
-│  │  :3000        │              │   :4000      │                  │
-│  └──────────────┘              └──────┬───────┘                  │
-│                                       │                           │
-│                                       ▼                           │
-│                                ┌──────────────┐                  │
-│                                │  PostgreSQL  │                  │
-│                                │ StatefulSet  │                  │
-│                                │   :5432      │                  │
-│                                └──────────────┘                  │
-│                                                                    │
-│  ┌──────────────────────────────────────────────────────────────┐ │
-│  │                    Observability                              │ │
-│  │  Prometheus (:9090)  →  Grafana (:3001)                      │ │
-│  │  Loki (:3100)        →  Promtail (DaemonSet)                 │ │
-│  └──────────────────────────────────────────────────────────────┘ │
-└────────────────────────────────────────────────────────────────────┘
+┌────────────────────────────────────────────────────────────────────────┐
+│                      k3d Cluster (oranje-markt)                        │
+│                      Namespace: oranje-markt                           │
+│                                                                        │
+│  ┌──────────────┐     HTTP      ┌──────────────┐                      │
+│  │  Frontend     │◄────────────►│   Backend    │                      │
+│  │  Deployment   │              │  Deployment  │                      │
+│  │  :3000        │              │   :4000      │                      │
+│  └──────────────┘              └──────┬───────┘                      │
+│                                       │                               │
+│                                       ▼                               │
+│                                ┌──────────────┐                      │
+│                                │  PostgreSQL  │                      │
+│                                │ StatefulSet  │                      │
+│                                │   :5432      │                      │
+│                                └──────────────┘                      │
+│                                                                        │
+│  ┌──────────────────────────────────────────────────────────────────┐ │
+│  │                    Observability                                  │ │
+│  │  Prometheus (:9090)       →  Grafana (:3001)                     │ │
+│  │  Loki (:3100)             →  Promtail (DaemonSet)                │ │
+│  │  Postgres-Exporter (:9187)                                       │ │
+│  └──────────────────────────────────────────────────────────────────┘ │
+└────────────────────────────────────────────────────────────────────────┘
 ```
 
 ## Tech Stack
@@ -306,8 +340,9 @@ kubectl describe pod <pod-name> -n oranje-markt
 | Authentication  | JWT (jsonwebtoken + bcryptjs)                 |
 | Logging         | Pino (structured JSON logging)                |
 | Metrics         | prom-client (Prometheus format)               |
+| DB Monitoring   | postgres-exporter (PostgreSQL metrics)        |
 | Monitoring      | Prometheus, Grafana, Loki, Promtail           |
-| Containerization| Docker, Docker Compose                        |
+| Containerization| Docker, Docker Compose, k3d (Kubernetes)      |
 | Testing         | Playwright (E2E + Load)                       |
 
 ## Testing

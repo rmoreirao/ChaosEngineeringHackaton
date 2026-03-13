@@ -45,7 +45,7 @@ export function metricsMiddleware(req: Request, res: Response, next: NextFunctio
 
   res.on('finish', () => {
     const duration = (Date.now() - start) / 1000;
-    const route = req.route?.path || req.path;
+    const route = req.route?.path || (res.statusCode === 404 ? 'UNMATCHED' : req.path);
 
     httpRequestsTotal.inc({
       method: req.method,

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { usePathname } from 'next/navigation';
 
 function reportMetric(body: Record<string, unknown>) {
@@ -19,19 +19,22 @@ function reportMetric(body: Record<string, unknown>) {
   }
 }
 
-function observeWebVitals(route: string) {
-  if (typeof window === 'undefined' || !('PerformanceObserver' in window)) return;
+function observeWebVitals(route: string): PerformanceObserver[] {
+  if (typeof window === 'undefined' || !('PerformanceObserver' in window)) return [];
+  const observers: PerformanceObserver[] = [];
 
   // LCP
   try {
     const lcpObserver = new PerformanceObserver((list) => {
       const entries = list.getEntries();
-      const last = entries[entries.length - 1];
+      const last = entries[entries.length - 1] as PerformanceEntry & { renderTime?: number; loadTime?: number };
       if (last) {
-        reportMetric({ type: 'web-vital', name: 'LCP', value: last.startTime / 1000, route });
+        const value = ((last.renderTime || last.loadTime || last.startTime) / 1000);
+        reportMetric({ type: 'web-vital', name: 'LCP', value, route });
       }
     });
     lcpObserver.observe({ type: 'largest-contentful-paint', buffered: true });
+    observers.push(lcpObserver);
   } catch {}
 
   // FID
@@ -43,9 +46,10 @@ function observeWebVitals(route: string) {
       }
     });
     fidObserver.observe({ type: 'first-input', buffered: true });
+    observers.push(fidObserver);
   } catch {}
 
-  // CLS
+  // CLS — accumulate and report once on visibility change
   try {
     let clsValue = 0;
     const clsObserver = new PerformanceObserver((list) => {
@@ -55,9 +59,16 @@ function observeWebVitals(route: string) {
           clsValue += layoutShift.value;
         }
       }
-      reportMetric({ type: 'web-vital', name: 'CLS', value: clsValue, route });
     });
     clsObserver.observe({ type: 'layout-shift', buffered: true });
+    observers.push(clsObserver);
+
+    const reportCLS = () => {
+      if (document.visibilityState === 'hidden') {
+        reportMetric({ type: 'web-vital', name: 'CLS', value: clsValue, route });
+      }
+    };
+    document.addEventListener('visibilitychange', reportCLS, { once: true });
   } catch {}
 
   // TTFB
@@ -68,21 +79,32 @@ function observeWebVitals(route: string) {
       reportMetric({ type: 'web-vital', name: 'TTFB', value: ttfb / 1000, route });
     }
   } catch {}
+
+  return observers;
 }
 
 export default function WebVitalsReporter() {
   const pathname = usePathname();
+  const observersRef = useRef<PerformanceObserver[]>([]);
 
   useEffect(() => {
     reportMetric({ type: 'page-view', route: pathname });
-    observeWebVitals(pathname);
+
+    // Clean up previous observers
+    observersRef.current.forEach((o) => { try { o.disconnect(); } catch {} });
+    observersRef.current = observeWebVitals(pathname);
+
+    return () => {
+      observersRef.current.forEach((o) => { try { o.disconnect(); } catch {} });
+      observersRef.current = [];
+    };
   }, [pathname]);
 
   useEffect(() => {
-    const onError = (event: ErrorEvent) => {
+    const onError = () => {
       reportMetric({ type: 'error', name: 'js_error', route: pathname });
     };
-    const onUnhandledRejection = (event: PromiseRejectionEvent) => {
+    const onUnhandledRejection = () => {
       reportMetric({ type: 'error', name: 'unhandled_rejection', route: pathname });
     };
 

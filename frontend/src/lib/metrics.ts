@@ -18,10 +18,11 @@ export const ssrRequestDuration = new client.Histogram({
   registers: [register],
 });
 
-export const webVitalsGauge = new client.Gauge({
+export const webVitalsHistogram = new client.Histogram({
   name: 'frontend_web_vitals',
   help: 'Web Vitals metrics from browser clients',
   labelNames: ['metric', 'route'],
+  buckets: [0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 4, 5, 10],
   registers: [register],
 });
 

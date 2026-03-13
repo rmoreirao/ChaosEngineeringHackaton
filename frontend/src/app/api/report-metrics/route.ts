@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import {
-  webVitalsGauge,
+  webVitalsHistogram,
   clientErrorsTotal,
   cartOperationsTotal,
   pageViewsTotal,
@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
       switch (report.type) {
         case 'web-vital':
           if (report.value !== undefined) {
-            webVitalsGauge.set({ metric: report.name, route }, report.value);
+            webVitalsHistogram.observe({ metric: report.name, route }, report.value);
           }
           break;
         case 'error':

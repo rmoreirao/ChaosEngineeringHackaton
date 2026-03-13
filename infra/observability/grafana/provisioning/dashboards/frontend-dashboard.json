@@ -59,12 +59,17 @@
     {
       "id": 3,
       "title": "LCP (Largest Contentful Paint)",
-      "type": "gauge",
+      "type": "timeseries",
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
-          "expr": "frontend_web_vitals{metric=\"LCP\"}"
+          "expr": "histogram_quantile(0.75, rate(frontend_web_vitals_bucket{metric=\"LCP\"}[5m]))",
+          "legendFormat": "p75"
+        },
+        {
+          "expr": "histogram_quantile(0.95, rate(frontend_web_vitals_bucket{metric=\"LCP\"}[5m]))",
+          "legendFormat": "p95"
         }
       ],
       "fieldConfig": {
@@ -80,25 +85,30 @@
               { "color": "yellow", "value": 2.5 },
               { "color": "red", "value": 4 }
             ]
+          },
+          "custom": {
+            "fillOpacity": 10,
+            "lineWidth": 2,
+            "thresholdsStyle": { "mode": "area" }
           }
         },
         "overrides": []
-      },
-      "options": {
-        "reduceOptions": {
-          "calcs": ["lastNotNull"]
-        }
       }
     },
     {
       "id": 4,
       "title": "FID (First Input Delay)",
-      "type": "gauge",
+      "type": "timeseries",
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
-          "expr": "frontend_web_vitals{metric=\"FID\"}"
+          "expr": "histogram_quantile(0.75, rate(frontend_web_vitals_bucket{metric=\"FID\"}[5m]))",
+          "legendFormat": "p75"
+        },
+        {
+          "expr": "histogram_quantile(0.95, rate(frontend_web_vitals_bucket{metric=\"FID\"}[5m]))",
+          "legendFormat": "p95"
         }
       ],
       "fieldConfig": {
@@ -114,25 +124,30 @@
               { "color": "yellow", "value": 100 },
               { "color": "red", "value": 300 }
             ]
+          },
+          "custom": {
+            "fillOpacity": 10,
+            "lineWidth": 2,
+            "thresholdsStyle": { "mode": "area" }
           }
         },
         "overrides": []
-      },
-      "options": {
-        "reduceOptions": {
-          "calcs": ["lastNotNull"]
-        }
       }
     },
     {
       "id": 5,
       "title": "CLS (Cumulative Layout Shift)",
-      "type": "gauge",
+      "type": "timeseries",
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 16 },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
-          "expr": "frontend_web_vitals{metric=\"CLS\"}"
+          "expr": "histogram_quantile(0.75, rate(frontend_web_vitals_bucket{metric=\"CLS\"}[5m]))",
+          "legendFormat": "p75"
+        },
+        {
+          "expr": "histogram_quantile(0.95, rate(frontend_web_vitals_bucket{metric=\"CLS\"}[5m]))",
+          "legendFormat": "p95"
         }
       ],
       "fieldConfig": {
@@ -148,25 +163,30 @@
               { "color": "yellow", "value": 0.1 },
               { "color": "red", "value": 0.25 }
             ]
+          },
+          "custom": {
+            "fillOpacity": 10,
+            "lineWidth": 2,
+            "thresholdsStyle": { "mode": "area" }
           }
         },
         "overrides": []
-      },
-      "options": {
-        "reduceOptions": {
-          "calcs": ["lastNotNull"]
-        }
       }
     },
     {
       "id": 6,
       "title": "TTFB",
-      "type": "gauge",
+      "type": "timeseries",
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 16 },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
-          "expr": "frontend_web_vitals{metric=\"TTFB\"}"
+          "expr": "histogram_quantile(0.75, rate(frontend_web_vitals_bucket{metric=\"TTFB\"}[5m]))",
+          "legendFormat": "p75"
+        },
+        {
+          "expr": "histogram_quantile(0.95, rate(frontend_web_vitals_bucket{metric=\"TTFB\"}[5m]))",
+          "legendFormat": "p95"
         }
       ],
       "fieldConfig": {
@@ -182,14 +202,14 @@
               { "color": "yellow", "value": 0.8 },
               { "color": "red", "value": 1.8 }
             ]
+          },
+          "custom": {
+            "fillOpacity": 10,
+            "lineWidth": 2,
+            "thresholdsStyle": { "mode": "area" }
           }
         },
         "overrides": []
-      },
-      "options": {
-        "reduceOptions": {
-          "calcs": ["lastNotNull"]
-        }
       }
     },
     {

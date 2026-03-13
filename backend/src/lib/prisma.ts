@@ -9,11 +9,17 @@ export const prisma = globalForPrisma.prisma ?? new PrismaClient();
 
 prisma.$use(async (params, next) => {
   const start = performance.now();
-  const result = await next(params);
-  const duration = (performance.now() - start) / 1000;
   const operation = `${params.model}.${params.action}`;
-  dbQueryDuration.observe({ operation }, duration);
-  return result;
+  try {
+    const result = await next(params);
+    const duration = (performance.now() - start) / 1000;
+    dbQueryDuration.observe({ operation }, duration);
+    return result;
+  } catch (error) {
+    const duration = (performance.now() - start) / 1000;
+    dbQueryDuration.observe({ operation }, duration);
+    throw error;
+  }
 });
 
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;

@@ -64,11 +64,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
   };
 
   const updateQuantity = (id: string, quantity: number) => {
-    reportCartOperation('update_quantity');
     if (quantity <= 0) {
       removeItem(id);
       return;
     }
+    reportCartOperation('update_quantity');
     setItems((prev) =>
       prev.map((i) => (i.id === id ? { ...i, quantity } : i))
     );
