@@ -20,6 +20,13 @@ router.post('/', requireAuth, async (req: AuthenticatedRequest, res: Response, n
     const { items, address } = req.body as { items: CartItem[]; address: string };
     const userId = req.user!.userId;
 
+    // Validate user still exists in the database
+    const user = await prisma.user.findUnique({ where: { id: userId }, select: { id: true } });
+    if (!user) {
+      res.status(401).json({ error: 'Your session is invalid. Please log out and log in again.' });
+      return;
+    }
+
     if (!items || !items.length) {
       res.status(400).json({ error: 'Cart is empty' });
       return;
