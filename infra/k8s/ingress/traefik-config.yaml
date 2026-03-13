@@ -1,0 +1,38 @@
+apiVersion: helm.cattle.io/v1
+kind: HelmChartConfig
+metadata:
+  name: traefik
+  namespace: kube-system
+spec:
+  valuesContent: |-
+    ports:
+      frontend:
+        port: 3000
+        expose:
+          default: true
+        exposedPort: 3000
+        protocol: TCP
+      backend:
+        port: 4000
+        expose:
+          default: true
+        exposedPort: 4000
+        protocol: TCP
+      grafana:
+        port: 3001
+        expose:
+          default: true
+        exposedPort: 3001
+        protocol: TCP
+      prometheus:
+        port: 9090
+        expose:
+          default: true
+        exposedPort: 9090
+        protocol: TCP
+      loki:
+        port: 3100
+        expose:
+          default: true
+        exposedPort: 3100
+        protocol: TCP
