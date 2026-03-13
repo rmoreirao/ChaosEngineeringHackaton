@@ -1,0 +1,107 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: oranje-markt-db
+    environment:
+      POSTGRES_USER: oranje
+      POSTGRES_PASSWORD: oranje123
+      POSTGRES_DB: oranjedb
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U oranje -d oranjedb"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    container_name: oranje-markt-backend
+    ports:
+      - "4000:4000"
+    environment:
+      DATABASE_URL: "postgresql://oranje:oranje123@db:5432/oranjedb?schema=public"
+      JWT_SECRET: "super-secret-key-change-in-production"
+      CORS_ORIGIN: "http://localhost:3000"
+      PORT: "4000"
+      NODE_ENV: "production"
+    depends_on:
+      db:
+        condition: service_healthy
+    labels:
+      - "promtail=true"
+
+  app:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+    container_name: oranje-markt-app
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_BACKEND_URL: "http://localhost:4000"
+      BACKEND_URL: "http://backend:4000"
+    depends_on:
+      - backend
+    labels:
+      - "promtail=true"
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: oranje-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: oranje-grafana
+    ports:
+      - "3001:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - ./observability/grafana/provisioning:/etc/grafana/provisioning
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - prometheus
+      - loki
+
+  loki:
+    image: grafana/loki:latest
+    container_name: oranje-loki
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./observability/loki/loki-config.yml:/etc/loki/local-config.yaml
+      - loki_data:/loki
+    command: -config.file=/etc/loki/local-config.yaml
+
+  promtail:
+    image: grafana/promtail:latest
+    container_name: oranje-promtail
+    volumes:
+      - ./observability/promtail/promtail-config.yml:/etc/promtail/config.yml
+      - //var/run/docker.sock:/var/run/docker.sock:ro
+    command: -config.file=/etc/promtail/config.yml
+    depends_on:
+      - loki
+
+volumes:
+  postgres_data:
+  prometheus_data:
+  grafana_data:
+  loki_data:

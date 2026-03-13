@@ -1,0 +1,36 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+frontend/.next/
+frontend/out/
+backend/dist/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Debug
+*.log
+npm-debug.log*
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Misc
+*.pem
+.vercel
+coverage/
+*.tsbuildinfo
+
+# Playwright
+.playwright-cli/

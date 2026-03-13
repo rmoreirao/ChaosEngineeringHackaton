@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboards-provider
+  namespace: oranje-markt
+data:
+  dashboards.yml: |
+    apiVersion: 1
+
+    providers:
+      - name: 'Oranje Markt'
+        orgId: 1
+        folder: 'Oranje Markt'
+        type: file
+        disableDeletion: false
+        editable: true
+        options:
+          path: /etc/grafana/provisioning/dashboards
+          foldersFromFilesStructure: false
