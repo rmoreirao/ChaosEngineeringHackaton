@@ -5,6 +5,26 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 K8S_DIR="$SCRIPT_DIR"
 CLUSTER_NAME="oranje-markt"
+TRAEFIK_FORWARD_PORTS=(3000 4000 3001 9090 3100)
+
+wait_for_service_port() {
+  local service_name="$1"
+  local namespace="$2"
+  local port="$3"
+  local timeout_seconds="${4:-180}"
+  local elapsed=0
+
+  until kubectl get svc "$service_name" -n "$namespace" 2>/dev/null \
+    -o jsonpath='{range .spec.ports[*]}{.port}{" "}{end}' | grep -Eq "(^| )${port}( |$)"; do
+    if [ "$elapsed" -ge "$timeout_seconds" ]; then
+      echo "Timed out waiting for service/$service_name in namespace $namespace to expose port $port" >&2
+      exit 1
+    fi
+
+    sleep 2
+    elapsed=$((elapsed + 2))
+  done
+}
 
 echo "============================================"
 echo "  Oranje Markt - K8s Deployment (k3d)"
@@ -29,6 +49,17 @@ fi
 echo ""
 echo ">>> Setting kubectl context..."
 kubectl config use-context "k3d-$CLUSTER_NAME"
+
+echo ""
+echo ">>> Configuring Traefik entrypoints for forwarded DevContainer ports..."
+kubectl apply -f "$K8S_DIR/ingress/traefik-config.yaml"
+
+echo ""
+echo ">>> Waiting for Traefik to expose forwarded ports..."
+for port in "${TRAEFIK_FORWARD_PORTS[@]}"; do
+  wait_for_service_port traefik kube-system "$port"
+done
+kubectl rollout status deployment/traefik -n kube-system --timeout=180s
 
 # --- 2. Build Docker images ---
 echo ""
@@ -88,35 +119,26 @@ kubectl create configmap grafana-dashboard-files \
 kubectl apply -f "$K8S_DIR/observability/grafana/"
 kubectl apply -f "$K8S_DIR/observability/promtail/"
 
+echo ""
+echo ">>> Applying ingress routes..."
+kubectl apply -f "$K8S_DIR/ingress/routes.yaml"
+
 # --- 5. Wait for all pods ---
 echo ""
 echo ">>> Waiting for all pods to be ready..."
 kubectl wait --for=condition=ready pod --all \
   -n oranje-markt --timeout=180s || true
 
-# --- 6. Set up port-forwarding ---
-echo ""
-echo ">>> Starting port-forwarding (background processes)..."
-
-# Kill any existing port-forwards
-pkill -f "kubectl port-forward.*oranje-markt" 2>/dev/null || true
-sleep 1
-
-kubectl port-forward svc/frontend 3000:3000 -n oranje-markt &
-kubectl port-forward svc/backend 4000:4000 -n oranje-markt &
-kubectl port-forward svc/grafana 3001:3001 -n oranje-markt &
-kubectl port-forward svc/prometheus 9090:9090 -n oranje-markt &
-kubectl port-forward svc/loki 3100:3100 -n oranje-markt &
-
-sleep 2
-
-# --- 7. Print status ---
+# --- 6. Print status ---
 echo ""
 echo "============================================"
 echo "  Deployment complete!"
 echo "============================================"
 echo ""
 kubectl get pods -n oranje-markt
+echo ""
+echo "Ingress:"
+kubectl get ingress -n oranje-markt
 echo ""
 echo "Services:"
 echo "  Frontend:   http://localhost:3000"
@@ -127,6 +149,7 @@ echo "  Loki:       http://localhost:3100"
 echo ""
 echo "Useful commands:"
 echo "  kubectl get pods -n oranje-markt"
+echo "  kubectl get ingress -n oranje-markt"
 echo "  kubectl logs -f deployment/backend -n oranje-markt"
 echo "  kubectl logs -f deployment/frontend -n oranje-markt"
 echo "  bash infra/k8s/teardown.sh   # to delete the cluster"

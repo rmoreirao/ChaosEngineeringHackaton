@@ -261,7 +261,7 @@ This will:
 2. Build the backend and frontend Docker images
 3. Import images into the k3d cluster
 4. Deploy PostgreSQL, Backend, Frontend, and the full observability stack (Prometheus, Grafana, Loki, Promtail, Postgres-Exporter)
-5. Set up port-forwarding so services are accessible on localhost
+5. Configure Traefik ingress so services are reachable directly on the forwarded DevContainer ports
 
 ### Quick Start (Local with k3d)
 
@@ -272,6 +272,8 @@ curl -s https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash
 # Deploy
 bash infra/k8s/deploy.sh
 ```
+
+The deployment no longer relies on background `kubectl port-forward` processes; Traefik exposes the app and observability services directly through the k3d load balancer.
 
 ### Teardown
 
@@ -284,6 +286,9 @@ bash infra/k8s/teardown.sh
 ```bash
 # View all pods
 kubectl get pods -n oranje-markt
+
+# View ingress routes
+kubectl get ingress -n oranje-markt
 
 # Watch pod status
 kubectl get pods -n oranje-markt -w
