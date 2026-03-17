@@ -17,8 +17,8 @@ spec:
     spec:
       initContainers:
         - name: db-migrate
-          image: oranje-markt-backend:local
-          imagePullPolicy: Never
+          image: devaihackathonacr.azurecr.io/oranje-markt-backend:latest
+          imagePullPolicy: IfNotPresent
           command: ["sh", "-c", "npx prisma migrate deploy && npx prisma db seed || echo 'Seed skipped'"]
           env:
             - name: DATABASE_URL
@@ -28,8 +28,8 @@ spec:
                   key: DATABASE_URL
       containers:
         - name: backend
-          image: oranje-markt-backend:local
-          imagePullPolicy: Never
+          image: devaihackathonacr.azurecr.io/oranje-markt-backend:latest
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 4000
           env:

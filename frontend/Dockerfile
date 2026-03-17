@@ -9,6 +9,8 @@ FROM base AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+ENV NEXT_PUBLIC_BACKEND_URL=""
+ENV BACKEND_URL="http://backend:4000"
 RUN npm run build
 
 FROM base AS runner

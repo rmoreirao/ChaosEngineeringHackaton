@@ -17,8 +17,8 @@ spec:
     spec:
       containers:
         - name: frontend
-          image: oranje-markt-frontend:local
-          imagePullPolicy: Never
+          image: devaihackathonacr.azurecr.io/oranje-markt-frontend:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 3000
           env:

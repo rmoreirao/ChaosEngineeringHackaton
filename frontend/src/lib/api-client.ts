@@ -3,8 +3,9 @@ function getBackendUrl(): string {
   if (typeof window === 'undefined') {
     return process.env.BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000';
   }
-  // Client-side: use NEXT_PUBLIC_BACKEND_URL (inlined at build time, browser-accessible)
-  return process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000';
+  // Client-side: use relative URLs so requests go through Next.js rewrites (works in AKS/Docker)
+  // Falls back to NEXT_PUBLIC_BACKEND_URL for local dev without rewrites
+  return process.env.NEXT_PUBLIC_BACKEND_URL || '';
 }
 
 interface FetchOptions extends RequestInit {

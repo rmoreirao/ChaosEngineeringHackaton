@@ -1,0 +1,13 @@
+{
+  "teams": [
+    { "name": "team-alpha" },
+    { "name": "team-bravo" },
+    { "name": "team-charlie" }
+  ],
+  "defaults": {
+    "location": "germanywestcentral",
+    "kubernetesVersion": "1.34",
+    "systemNodeVmSize": "Standard_D2s_v3",
+    "systemNodeCount": 3
+  }
+}
