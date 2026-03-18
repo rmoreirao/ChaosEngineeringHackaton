@@ -29,7 +29,10 @@ interface RunResult {
 }
 
 async function runUser(userId: number, scenarioFn: (page: Page) => Promise<void | string>, endTime: number): Promise<RunResult[]> {
-  const browser = await chromium.launch({ headless: true });
+  const browser = await chromium.launch({
+    headless: true,
+    args: ['--no-sandbox', '--disable-dev-shm-usage', '--disable-gpu'],
+  });
   const results: RunResult[] = [];
   let iteration = 0;
 

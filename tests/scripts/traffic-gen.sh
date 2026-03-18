@@ -8,6 +8,32 @@ DURATION="${DURATION:-30}"
 BASE_URL="${BASE_URL:-http://localhost:3000}"
 SLEEP_BETWEEN_RUNS="${SLEEP_BETWEEN_RUNS:-30}"
 
+# Resolve Docker/internal hostnames to IP addresses.
+# Chromium's HSTS preload list forces HTTPS for certain hostnames (e.g. "app"
+# conflicts with the .app TLD). Using the resolved IP bypasses this.
+resolve_base_url() {
+  PROTO=$(echo "$BASE_URL" | sed -n 's|\(https\{0,1\}://\).*|\1|p')
+  HOST_PORT=$(echo "$BASE_URL" | sed 's|https\{0,1\}://||')
+  HOST=$(echo "$HOST_PORT" | sed 's|:.*||')
+  PORT=$(echo "$HOST_PORT" | grep ':' | sed 's|.*:||')
+
+  # Skip if already an IP or localhost
+  if echo "$HOST" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$' || [ "$HOST" = "localhost" ]; then
+    return
+  fi
+
+  RESOLVED_IP=$(getent hosts "$HOST" 2>/dev/null | awk '{print $1}' | head -1)
+  if [ -n "$RESOLVED_IP" ]; then
+    if [ -n "$PORT" ]; then
+      BASE_URL="${PROTO}${RESOLVED_IP}:${PORT}"
+    else
+      BASE_URL="${PROTO}${RESOLVED_IP}"
+    fi
+    echo "  DNS: $HOST → $RESOLVED_IP (BASE_URL rewritten to $BASE_URL)"
+  fi
+}
+
+resolve_base_url
 export BASE_URL
 
 echo "============================================"

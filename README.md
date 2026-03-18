@@ -17,12 +17,13 @@ A full-stack Dutch specialty e-commerce application built for the Chaos Engineer
 │  │   (Next.js)  │               │  (Express)   │                        │
 │  │   :3000      │               │   :4000      │                        │
 │  └──────┬───────┘               └──────┬───────┘                        │
-│         │                              │                                 │
-│         │ Web Vitals                   ▼                                 │
+│         ▲                              │                                 │
+│         │ Web Vitals (POST)            ▼                                 │
 │         │ /api/report-metrics   ┌──────────────┐                        │
-│         └─────────────────────► │  PostgreSQL  │                        │
-│                                 │   :5432      │                        │
-│                                 └──────┬───────┘                        │
+│  ┌──────┴───────┐               │  PostgreSQL  │                        │
+│  │   Browser    │               │   :5432      │                        │
+│  │  (end user)  │               └──────┬───────┘                        │
+│  └──────────────┘                      │                                 │
 │                                        │                                 │
 │  ┌──────────────────────────────────────┴─────────────────────────────┐  │
 │  │                       Observability                                │  │
