@@ -1,0 +1,31 @@
+# Broken deployment: ImagePullBackOff
+# The image reference has a typo — wrong registry and tag.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: chaos-imagepull
+  namespace: oranje-markt
+  labels:
+    app: chaos-imagepull
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: chaos-imagepull
+  template:
+    metadata:
+      labels:
+        app: chaos-imagepull
+    spec:
+      containers:
+        - name: backend
+          image: devaihackathonacr.azurecr.io/oranje-markt-backend:v99-does-not-exist
+          ports:
+            - containerPort: 4000
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "250m"

@@ -1,0 +1,31 @@
+# Broken deployment: Pending (impossible resource requests)
+# Requests 64Gi memory and 32 CPU cores — far exceeding any node's capacity.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: chaos-resource
+  namespace: oranje-markt
+  labels:
+    app: chaos-resource
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: chaos-resource
+  template:
+    metadata:
+      labels:
+        app: chaos-resource
+    spec:
+      containers:
+        - name: backend
+          image: devaihackathonacr.azurecr.io/oranje-markt-backend:latest
+          ports:
+            - containerPort: 4000
+          resources:
+            requests:
+              memory: "64Gi"
+              cpu: "32"
+            limits:
+              memory: "128Gi"
+              cpu: "64"

@@ -1,0 +1,75 @@
+# PostgreSQL PDB + backup CronJob
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: postgres-pdb
+  namespace: oranje-markt
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: postgres
+---
+# CronJob: backs up the PostgreSQL database every hour using pg_dump.
+# Stores the backup in a temporary volume (emptyDir) — in production,
+# use Azure Blob Storage or a PersistentVolumeClaim for durable backups.
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: postgres-backup
+  namespace: oranje-markt
+spec:
+  schedule: "0 * * * *"
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: pg-backup
+              image: postgres:16-alpine
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+                  BACKUP_FILE="/backups/oranjedb-${TIMESTAMP}.sql"
+                  echo "Starting backup at ${TIMESTAMP}..."
+                  PGPASSWORD="${POSTGRES_PASSWORD}" pg_dump \
+                    -h postgres \
+                    -U "${POSTGRES_USER}" \
+                    -d "${POSTGRES_DB}" \
+                    -F c \
+                    -f "${BACKUP_FILE}"
+                  if [ $? -eq 0 ]; then
+                    echo "Backup completed: ${BACKUP_FILE}"
+                    ls -lh "${BACKUP_FILE}"
+                  else
+                    echo "Backup FAILED"
+                    exit 1
+                  fi
+              env:
+                - name: POSTGRES_USER
+                  valueFrom:
+                    secretKeyRef:
+                      name: postgres-secret
+                      key: POSTGRES_USER
+                - name: POSTGRES_PASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: postgres-secret
+                      key: POSTGRES_PASSWORD
+                - name: POSTGRES_DB
+                  valueFrom:
+                    secretKeyRef:
+                      name: postgres-secret
+                      key: POSTGRES_DB
+              volumeMounts:
+                - name: backup-storage
+                  mountPath: /backups
+          volumes:
+            - name: backup-storage
+              emptyDir: {}

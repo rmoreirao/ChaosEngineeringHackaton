@@ -1,0 +1,33 @@
+# Broken deployment: CrashLoopBackOff
+# The container has a custom command that doesn't exist in the image.
+# This causes the container to fail on startup, resulting in CrashLoopBackOff.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: chaos-crashloop
+  namespace: oranje-markt
+  labels:
+    app: chaos-crashloop
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: chaos-crashloop
+  template:
+    metadata:
+      labels:
+        app: chaos-crashloop
+    spec:
+      containers:
+        - name: backend
+          image: devaihackathonacr.azurecr.io/oranje-markt-backend:latest
+          command: ["/bin/start-backend"]
+          ports:
+            - containerPort: 4000
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "250m"

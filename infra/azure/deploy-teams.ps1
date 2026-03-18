@@ -6,7 +6,7 @@
     For each team in teams.json, this script:
     1. Deploys Azure infrastructure (RG, VNet, Identity, AKS, ACR) via Bicep
     2. Attaches ACR to AKS for image pull permissions
-    3. Builds and pushes Docker images to the team's ACR
+    3. Builds Docker images locally and pushes to the team's ACR
     4. Deploys Kubernetes manifests to the team's AKS cluster
     5. Outputs the frontend LoadBalancer IP for each team
 
@@ -101,35 +101,49 @@ foreach ($team in $teams) {
     }
     Write-Host "  ACR attached." -ForegroundColor DarkGreen
 
-    # --- Step 3: Build and push Docker images ---
+    # --- Step 3: Build and push Docker images (local build + push) ---
     Write-Host "`n[3/6] Building and pushing Docker images..." -ForegroundColor Green
 
-    Write-Host "  Building backend..."
-    az acr build `
-        --registry $acrName `
-        --image oranje-markt-backend:latest `
-        --file "$RepoRoot\backend\Dockerfile" `
-        "$RepoRoot\backend\" `
-        --output none 2>$null
+    $acrLoginServer = az acr show --name $acrName --query loginServer --output tsv 2>$null
 
+    Write-Host "  Logging in to ACR ($acrLoginServer)..."
+    az acr login --name $acrName --output none 2>$null
+    if ($LASTEXITCODE -ne 0) {
+        Write-Error "ACR login failed for $name"
+        continue
+    }
+
+    $backendImage = "$acrLoginServer/oranje-markt-backend:latest"
+    $frontendImage = "$acrLoginServer/oranje-markt-frontend:latest"
+
+    Write-Host "  Building backend (local)..."
+    docker build -t $backendImage "$RepoRoot\backend" 2>$null
     if ($LASTEXITCODE -ne 0) {
         Write-Error "Backend image build failed for $name"
         continue
     }
 
-    Write-Host "  Building frontend..."
-    az acr build `
-        --registry $acrName `
-        --image oranje-markt-frontend:latest `
-        --file "$RepoRoot\frontend\Dockerfile" `
-        "$RepoRoot\frontend\" `
-        --output none 2>$null
-
+    Write-Host "  Building frontend (local)..."
+    docker build -t $frontendImage "$RepoRoot\frontend" 2>$null
     if ($LASTEXITCODE -ne 0) {
         Write-Error "Frontend image build failed for $name"
         continue
     }
-    Write-Host "  Images pushed." -ForegroundColor DarkGreen
+
+    Write-Host "  Pushing backend..."
+    docker push $backendImage 2>$null
+    if ($LASTEXITCODE -ne 0) {
+        Write-Error "Backend image push failed for $name"
+        continue
+    }
+
+    Write-Host "  Pushing frontend..."
+    docker push $frontendImage 2>$null
+    if ($LASTEXITCODE -ne 0) {
+        Write-Error "Frontend image push failed for $name"
+        continue
+    }
+    Write-Host "  Images built and pushed." -ForegroundColor DarkGreen
 
     # --- Step 4: Get AKS credentials ---
     Write-Host "`n[4/6] Getting AKS credentials..." -ForegroundColor Green
@@ -145,7 +159,7 @@ foreach ($team in $teams) {
     # --- Step 5: Deploy K8s manifests ---
     Write-Host "`n[5/6] Deploying Kubernetes manifests..." -ForegroundColor Green
 
-    $acrLoginServer = az acr show --name $acrName --query loginServer --output tsv 2>$null
+    # $acrLoginServer already set in Step 3
 
     # Create a temp directory for patched manifests
     $tempDir = New-Item -ItemType Directory -Path "$env:TEMP\k8s-$name" -Force
