@@ -72,10 +72,14 @@ docker build \
   --build-arg NEXT_PUBLIC_BACKEND_URL="http://localhost:4000" \
   -t oranje-markt-frontend:local "$REPO_ROOT/frontend"
 
+echo ""
+echo ">>> Building traffic-generator Docker image..."
+docker build -t oranje-markt-traffic-generator:local "$REPO_ROOT/tests"
+
 # --- 3. Import images into k3d ---
 echo ""
 echo ">>> Importing images into k3d cluster..."
-k3d image import oranje-markt-backend:local oranje-markt-frontend:local \
+k3d image import oranje-markt-backend:local oranje-markt-frontend:local oranje-markt-traffic-generator:local \
   --cluster "$CLUSTER_NAME"
 
 # --- 4. Deploy K8s manifests ---
@@ -99,6 +103,10 @@ kubectl apply -f "$K8S_DIR/backend/"
 echo ""
 echo ">>> Deploying Frontend..."
 kubectl apply -f "$K8S_DIR/frontend/"
+
+echo ""
+echo ">>> Deploying Traffic Generator..."
+kubectl apply -f "$K8S_DIR/traffic-generator/"
 
 echo ""
 echo ">>> Deploying Observability stack..."
@@ -152,5 +160,6 @@ echo "  kubectl get pods -n oranje-markt"
 echo "  kubectl get ingress -n oranje-markt"
 echo "  kubectl logs -f deployment/backend -n oranje-markt"
 echo "  kubectl logs -f deployment/frontend -n oranje-markt"
+echo "  kubectl logs -f deployment/traffic-generator -n oranje-markt"
 echo "  bash infra/k8s/teardown.sh   # to delete the cluster"
 echo ""

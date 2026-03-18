@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: traffic-generator-config
+  namespace: oranje-markt
+  labels:
+    app: traffic-generator
+data:
+  SCENARIOS: "browse,search,register,checkout,unauth"
+  USERS: "3"
+  DURATION: "30"
+  BASE_URL: "http://frontend:80"
+  SLEEP_BETWEEN_RUNS: "30"

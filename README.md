@@ -64,6 +64,7 @@ A full-stack Dutch specialty e-commerce application built for the Chaos Engineer
 │   │   ├── postgres/    # StatefulSet, PVC, Secret, Service
 │   │   ├── backend/     # Deployment, ConfigMap, Service
 │   │   ├── frontend/    # Deployment, Service
+│   │   ├── traffic-generator/ # Deployment, ConfigMap (continuous traffic gen)
 │   │   └── observability/
 │   │       ├── prometheus/
 │   │       ├── grafana/
@@ -75,7 +76,9 @@ A full-stack Dutch specialty e-commerce application built for the Chaos Engineer
 │       ├── prometheus/  # Scrape config (backend, frontend, pg-exporter)
 │       ├── loki/
 │       └── promtail/
-├── tests/               # Playwright E2E + load tests
+├── tests/               # Playwright E2E + load tests + traffic generator
+│   ├── Dockerfile       # Traffic generator container image
+│   └── scripts/         # traffic-gen.sh entrypoint
 ├── docs/                # Documentation and screenshots
 └── archive/             # Archived/deprecated materials
 ```
@@ -258,9 +261,9 @@ bash infra/k8s/deploy.sh
 
 This will:
 1. Create a k3d cluster named `oranje-markt`
-2. Build the backend and frontend Docker images
+2. Build the backend, frontend, and traffic-generator Docker images
 3. Import images into the k3d cluster
-4. Deploy PostgreSQL, Backend, Frontend, and the full observability stack (Prometheus, Grafana, Loki, Promtail, Postgres-Exporter)
+4. Deploy PostgreSQL, Backend, Frontend, Traffic Generator, and the full observability stack (Prometheus, Grafana, Loki, Promtail, Postgres-Exporter)
 5. Configure Traefik ingress so services are reachable directly on the forwarded DevContainer ports
 
 ### Quick Start (Local with k3d)
@@ -299,6 +302,9 @@ kubectl logs -f deployment/backend -n oranje-markt
 # View frontend logs
 kubectl logs -f deployment/frontend -n oranje-markt
 
+# View traffic generator logs
+kubectl logs -f deployment/traffic-generator -n oranje-markt
+
 # Restart a deployment
 kubectl rollout restart deployment/backend -n oranje-markt
 
@@ -317,14 +323,14 @@ kubectl describe pod <pod-name> -n oranje-markt
 │  │  Frontend     │◄────────────►│   Backend    │                      │
 │  │  Deployment   │              │  Deployment  │                      │
 │  │  :3000        │              │   :4000      │                      │
-│  └──────────────┘              └──────┬───────┘                      │
-│                                       │                               │
-│                                       ▼                               │
-│                                ┌──────────────┐                      │
-│                                │  PostgreSQL  │                      │
-│                                │ StatefulSet  │                      │
-│                                │   :5432      │                      │
-│                                └──────────────┘                      │
+│  └──────┬───────┘              └──────┬───────┘                      │
+│         ▲                             │                               │
+│         │ Playwright traffic          ▼                               │
+│  ┌──────┴───────┐              ┌──────────────┐                      │
+│  │   Traffic    │              │  PostgreSQL  │                      │
+│  │  Generator   │              │ StatefulSet  │                      │
+│  │  Deployment  │              │   :5432      │                      │
+│  └──────────────┘              └──────────────┘                      │
 │                                                                        │
 │  ┌──────────────────────────────────────────────────────────────────┐ │
 │  │                    Observability                                  │ │
@@ -349,6 +355,7 @@ kubectl describe pod <pod-name> -n oranje-markt
 | Monitoring      | Prometheus, Grafana, Loki, Promtail           |
 | Containerization| Docker, Docker Compose, k3d (Kubernetes)      |
 | Testing         | Playwright (E2E + Load)                       |
+| Traffic Gen     | Playwright-based continuous traffic generator  |
 
 ## Testing
 
@@ -413,3 +420,58 @@ npx tsx load/load-test.ts --scenario=browse --users=5 --duration=60
 - 10% registration (`register`) — creates users, use unique emails per run
 - 25% purchase (`checkout`) — full purchase funnel, measures end-to-end latency
 - 5% auth redirect (`unauth`) — lightweight auth middleware check
+
+## Traffic Generator
+
+A containerized, continuously running traffic generator that uses the same Playwright scenario flows to produce realistic website traffic. Ideal for chaos engineering experiments — it generates steady-state traffic so faults can be injected and observed through the observability stack.
+
+### How It Works
+
+The traffic generator runs in an infinite loop:
+1. Cycles through each configured scenario (browse → search → register → checkout → unauth)
+2. For each scenario, spawns N concurrent browser contexts running for a configurable duration
+3. Sleeps between rounds, then repeats
+
+### Configuration (Environment Variables)
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `SCENARIOS` | `browse,search,register,checkout,unauth` | Comma-separated list of scenarios to run |
+| `USERS` | `3` | Number of concurrent browser contexts per scenario |
+| `DURATION` | `30` | Duration in seconds for each scenario run |
+| `BASE_URL` | `http://localhost:3000` | Target frontend URL |
+| `SLEEP_BETWEEN_RUNS` | `30` | Seconds to sleep between rounds |
+
+### Run with Docker Compose
+
+The traffic generator is included in `docker-compose.yml` and starts automatically:
+
+```bash
+cd infra
+docker compose up --build -d
+```
+
+To view traffic generator logs:
+
+```bash
+docker logs -f oranje-markt-traffic-generator
+```
+
+### Run with Kubernetes
+
+The traffic generator is deployed as a Deployment (1 replica) in the `oranje-markt` namespace. Configuration is managed via the `traffic-generator-config` ConfigMap.
+
+```bash
+# View traffic generator logs
+kubectl logs -f deployment/traffic-generator -n oranje-markt
+
+# Adjust configuration
+kubectl edit configmap traffic-generator-config -n oranje-markt
+kubectl rollout restart deployment/traffic-generator -n oranje-markt
+
+# Stop traffic generation
+kubectl scale deployment/traffic-generator --replicas=0 -n oranje-markt
+
+# Resume traffic generation
+kubectl scale deployment/traffic-generator --replicas=1 -n oranje-markt
+```

@@ -15,7 +15,7 @@ param networkPolicy = 'azure'
 // ---------- AKS ----------
 param kubernetesVersion = '1.34'
 param systemNodeVmSize = 'Standard_D2s_v3'
-param systemNodeCount = 3
+param systemNodeCount = 1
 
 // ---------- Tags ----------
 param tags = {

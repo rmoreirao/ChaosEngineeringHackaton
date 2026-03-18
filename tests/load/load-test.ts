@@ -36,7 +36,7 @@ async function runUser(userId: number, scenarioFn: (page: Page) => Promise<void 
   try {
     while (Date.now() < endTime) {
       iteration++;
-      const context = await browser.newContext({ baseURL: 'http://localhost:3000' });
+      const context = await browser.newContext({ baseURL: process.env.BASE_URL || 'http://localhost:3000' });
       const page = await context.newPage();
       const start = Date.now();
 
