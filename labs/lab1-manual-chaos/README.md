@@ -17,6 +17,27 @@ Learn chaos engineering fundamentals by manually injecting failures into the Ora
 - `kubectl` connected to the AKS cluster
 - Grafana accessible (port-forward or LoadBalancer)
 
+### Connecting to the AKS Cluster
+
+Each team has its own cluster. Replace `<team-name>` with your team name from `teams.json`:
+
+```bash
+# Get credentials (use --admin if RBAC isn't configured for your user)
+az aks get-credentials \
+  --resource-group rg-<team-name> \
+  --name <team-name>-aks \
+  --admin
+
+# If using Azure AD authentication and getting Forbidden errors, convert kubeconfig:
+kubelogin convert-kubeconfig -l azurecli
+```
+
+Verify connectivity:
+```bash
+kubectl get nodes
+kubectl get pods -n oranje-markt
+```
+
 ## Reference Documentation
 
 - [Chaos Engineering principles](https://principlesofchaos.org/)
@@ -190,11 +211,17 @@ Learn chaos engineering fundamentals by manually injecting failures into the Ora
 
 - Start with baseline traffic and gradually increase load
 - You can use any tool: the existing `tests/load/` scripts, `kubectl run` with curl loops, or install a load testing tool
-- Simple approach with kubectl:
+- Simple approach with kubectl (use `--labels` so cleanup is easy):
   ```bash
-  kubectl run load-test --image=busybox --restart=Never -n oranje-markt -- /bin/sh -c "while true; do wget -q -O- http://backend:4000/api/products; done"
+  kubectl run load-test-1 --image=busybox --restart=Never --labels="chaos=load-test" -n oranje-markt -- /bin/sh -c "while true; do wget -q -O- http://backend:4000/api/products; done"
   ```
-- Scale up the load (run multiple load-test pods)
+- Scale up the load (run multiple load-test pods):
+  ```bash
+  for i in $(seq 2 5); do
+    kubectl run load-test-$i --image=busybox --restart=Never --labels="chaos=load-test" -n oranje-markt \
+      -- /bin/sh -c "while true; do wget -q -O- http://backend:4000/api/products; done"
+  done
+  ```
 - Monitor Grafana: CPU, memory, request rate, error rate
 - Identify the breaking point: at what load level does the app fail?
 
@@ -212,7 +239,7 @@ Learn chaos engineering fundamentals by manually injecting failures into the Ora
 - Watch `kubectl top pods -n oranje-markt` in real-time
 - The backend has `512Mi` memory limit and `500m` CPU limit — these are your boundaries
 - PostgreSQL with a single connection can become a bottleneck quickly
-- Clean up load test pods after: `kubectl delete pod -n oranje-markt -l run=load-test`
+- Clean up load test pods after: `kubectl delete pod -n oranje-markt -l chaos=load-test`
 
 > **Discussion:** What is the most common bottleneck you found? How would autoscaling (HPA) help? What is the difference between resource requests and limits?
 
@@ -224,7 +251,7 @@ Remove any temporary resources and restore the environment to its original state
 
 ```bash
 # Delete load test pods
-kubectl delete pod -n oranje-markt -l run=load-test --ignore-not-found
+kubectl delete pod -n oranje-markt -l chaos=load-test --ignore-not-found
 
 # Verify all original pods are running
 kubectl get pods -n oranje-markt
@@ -248,6 +275,18 @@ kubectl top pods -n oranje-markt
 | **Network Disruption** | Applications need resilience patterns for connectivity failures |
 | **Node Drain** | Kubernetes reschedules workloads, but without PDBs, all pods on a node can be evicted at once |
 | **Load Testing** | Every system has a breaking point — resource limits and replica count determine capacity |
+
+## Expected Recovery Timings
+
+Use these as a reference — your results may vary depending on cluster size and image pull times:
+
+| Experiment | Expected Recovery Time | Notes |
+|------------|----------------------|-------|
+| Kill backend pod | ~30s | Includes init container (db-migrate) |
+| Kill PostgreSQL pod | ~15-20s | StatefulSet recreates with same PVC |
+| Wrong DATABASE_URL | Immediate rollback with `rollout undo` | Old pod keeps serving (RollingUpdate strategy) |
+| Node drain (multi-node) | ~2 min | Backend may CrashLoopBackOff if DB isn't ready first |
+| Load test (5 pods) | N/A | Backend CPU ~500m (throttled), latency ~5-8x increase |
 
 ## Key Takeaways
 

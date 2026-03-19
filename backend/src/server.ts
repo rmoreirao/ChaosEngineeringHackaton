@@ -25,8 +25,14 @@ app.use(metricsMiddleware);
 
 app.get('/api/metrics', metricsRoute);
 
-app.get('/api/health', (_req, res) => {
-  res.json({ status: 'ok' });
+app.get('/api/health', async (_req, res) => {
+  try {
+    const { prisma } = await import('./lib/prisma');
+    await prisma.$queryRawUnsafe('SELECT 1');
+    res.json({ status: 'ok' });
+  } catch {
+    res.status(503).json({ status: 'unhealthy', reason: 'database unreachable' });
+  }
 });
 
 app.use('/api/auth', authRoutes);
