@@ -1,0 +1,16 @@
+[
+  {
+    "Team": "kad-chaos-team1",
+    "ResourceGroup": "rg-kad-chaos-team1",
+    "AKS": "kad-chaos-team1-aks",
+    "ACR": "kadchaosteam1acr",
+    "FrontendURL": "http://(pending)"
+  },
+  {
+    "Team": "kad-chaos-team2",
+    "ResourceGroup": "rg-kad-chaos-team2",
+    "AKS": "kad-chaos-team2-aks",
+    "ACR": "kadchaosteam2acr",
+    "FrontendURL": "http://(pending)"
+  }
+]

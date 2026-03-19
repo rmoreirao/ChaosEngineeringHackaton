@@ -94,7 +94,7 @@ foreach ($team in $teams) {
         --resource-group $rgName `
         --name "$name-aks" `
         --attach-acr $acrName `
-        --output none 2>$null
+        --output none
 
     if ($LASTEXITCODE -ne 0) {
         Write-Warning "ACR attach may have failed for $name — continuing"
@@ -104,12 +104,21 @@ foreach ($team in $teams) {
     # --- Step 3: Build and push Docker images (local build + push) ---
     Write-Host "`n[3/6] Building and pushing Docker images..." -ForegroundColor Green
 
-    $acrLoginServer = az acr show --name $acrName --query loginServer --output tsv 2>$null
+    $acrLoginServer = az acr show --name $acrName --query loginServer --output tsv
+    if ($LASTEXITCODE -ne 0) {
+        Write-Error "Failed to retrieve ACR login server for $acrName — verify the ACR exists in resource group $rgName"
+        continue
+    }
 
     Write-Host "  Logging in to ACR ($acrLoginServer)..."
-    az acr login --name $acrName --output none 2>$null
+    $acrToken = az acr login --name $acrName --expose-token --query accessToken --output tsv
     if ($LASTEXITCODE -ne 0) {
-        Write-Error "ACR login failed for $name"
+        Write-Error "ACR login failed for $name — ensure you have AcrPush permissions"
+        continue
+    }
+    $acrToken | docker login $acrLoginServer -u 00000000-0000-0000-0000-000000000000 --password-stdin
+    if ($LASTEXITCODE -ne 0) {
+        Write-Error "Docker login to ACR failed for $name — ensure Docker Desktop is running"
         continue
     }
 
@@ -117,28 +126,28 @@ foreach ($team in $teams) {
     $frontendImage = "$acrLoginServer/oranje-markt-frontend:latest"
 
     Write-Host "  Building backend (local)..."
-    docker build -t $backendImage "$RepoRoot\backend" 2>$null
+    docker build -t $backendImage "$RepoRoot\backend"
     if ($LASTEXITCODE -ne 0) {
         Write-Error "Backend image build failed for $name"
         continue
     }
 
     Write-Host "  Building frontend (local)..."
-    docker build -t $frontendImage "$RepoRoot\frontend" 2>$null
+    docker build -t $frontendImage "$RepoRoot\frontend"
     if ($LASTEXITCODE -ne 0) {
         Write-Error "Frontend image build failed for $name"
         continue
     }
 
     Write-Host "  Pushing backend..."
-    docker push $backendImage 2>$null
+    docker push $backendImage
     if ($LASTEXITCODE -ne 0) {
         Write-Error "Backend image push failed for $name"
         continue
     }
 
     Write-Host "  Pushing frontend..."
-    docker push $frontendImage 2>$null
+    docker push $frontendImage
     if ($LASTEXITCODE -ne 0) {
         Write-Error "Frontend image push failed for $name"
         continue
@@ -152,7 +161,7 @@ foreach ($team in $teams) {
         --name "$name-aks" `
         --overwrite-existing `
         --admin `
-        --output none 2>$null
+        --output none
 
     Write-Host "  Credentials configured." -ForegroundColor DarkGreen
 
@@ -175,20 +184,20 @@ foreach ($team in $teams) {
     }
 
     # Apply manifests in order
-    kubectl apply -f "$tempDir\namespace.yaml" 2>$null
-    kubectl apply -f "$tempDir\postgres\" 2>$null
+    kubectl apply -f "$tempDir\namespace.yaml"
+    kubectl apply -f "$tempDir\postgres\"
 
     Write-Host "  Waiting for PostgreSQL..."
-    kubectl wait --for=condition=ready pod -l app=postgres -n oranje-markt --timeout=120s 2>$null
+    kubectl wait --for=condition=ready pod -l app=postgres -n oranje-markt --timeout=120s
 
-    kubectl apply -f "$tempDir\backend\" 2>$null
-    kubectl apply -f "$tempDir\frontend\" 2>$null
+    kubectl apply -f "$tempDir\backend\"
+    kubectl apply -f "$tempDir\frontend\"
 
     # Deploy observability stack
     $obsDir = "$tempDir\observability"
     if (Test-Path $obsDir) {
         Get-ChildItem -Path $obsDir -Directory | ForEach-Object {
-            kubectl apply -f $_.FullName 2>$null
+            kubectl apply -f $_.FullName
         }
     }
 
@@ -204,7 +213,7 @@ foreach ($team in $teams) {
     $attempts = 0
     while ($ip -eq "" -or $ip -eq "<pending>" -and $attempts -lt 30) {
         Start-Sleep -Seconds 5
-        $ip = kubectl get svc frontend -n oranje-markt -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>$null
+        $ip = kubectl get svc frontend -n oranje-markt -o jsonpath='{.status.loadBalancer.ingress[0].ip}'
         $attempts++
     }
 
