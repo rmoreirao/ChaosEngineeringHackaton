@@ -4,14 +4,16 @@
 
 | Component | Details |
 |-----------|---------|
-| Frontend | Next.js · port 3000 · Deployment `frontend` · `devaihackathonacr.azurecr.io/oranje-markt-frontend:latest` |
-| Backend | Express · port 4000 · Deployment `backend` · `devaihackathonacr.azurecr.io/oranje-markt-backend:latest` · health at `/api/health` |
+| Frontend | Next.js · port 3000 · Deployment `frontend` · `<team-acr>.azurecr.io/oranje-markt-frontend:latest` |
+| Backend | Express · port 4000 · Deployment `backend` · `<team-acr>.azurecr.io/oranje-markt-backend:latest` · health at `/api/health` |
 | Database | PostgreSQL · StatefulSet `postgres` · pod `postgres-0` · PVC `postgres-data` |
 | Namespace | `oranje-markt` |
 | Observability | Grafana (port-forward `svc/grafana` → 3001), Prometheus, Loki |
-| Cluster | 3 × Standard_D2s_v3 (2 vCPU, 8 GiB each) |
+| Cluster | 2 × Standard_D2s_v3 (2 vCPU, 8 GiB each) — node count may vary per team |
 | Backend init container | `db-migrate` — runs Prisma migrations on startup |
 | Backend env | `DATABASE_URL` sourced from Secret `postgres-secret` |
+
+> **Note:** The ACR registry name is team-specific: `<team-name-no-hyphens>acr.azurecr.io` (e.g., `kadchaosteam1acr.azurecr.io`). Replace `<team-acr>` with your team's registry name. You can find the actual image source via `kubectl describe pod -n oranje-markt <pod-name>` and checking the `Events` section for "Successfully pulled image".
 
 ---
 
@@ -28,10 +30,15 @@ kubectl get pods -n oranje-markt
 **Expected output:**
 
 ```
-NAME                        READY   STATUS    RESTARTS   AGE
-backend-xxxxxxxxx-xxxxx     1/1     Running   0          10m
-frontend-xxxxxxxxx-xxxxx    1/1     Running   0          10m
-postgres-0                  1/1     Running   0          10m
+NAME                             READY   STATUS    RESTARTS   AGE
+backend-xxxxxxxxx-xxxxx          1/1     Running   0          10m
+frontend-xxxxxxxxx-xxxxx         1/1     Running   0          10m
+grafana-xxxxxxxxx-xxxxx          1/1     Running   0          10m
+loki-xxxxxxxxx-xxxxx             1/1     Running   0          10m
+postgres-0                       1/1     Running   0          10m
+postgres-exporter-xxxxx-xxxxx    1/1     Running   0          10m
+prometheus-xxxxxxxxx-xxxxx       1/1     Running   0          10m
+promtail-xxxxx                   1/1     Running   0          10m
 ```
 
 All pods should be `Running` with `READY 1/1`.
@@ -42,7 +49,13 @@ All pods should be `Running` with `READY 1/1`.
 kubectl get svc -n oranje-markt
 ```
 
-Look for the `frontend` service with type `LoadBalancer` and note the `EXTERNAL-IP`. Open it in a browser to confirm the app loads.
+Look for the `frontend` service with type `LoadBalancer` and note the `EXTERNAL-IP`. You can also get it directly:
+
+```powershell
+kubectl get svc frontend -n oranje-markt -o jsonpath='{.status.loadBalancer.ingress[0].ip}'
+```
+
+Open it in a browser to confirm the app loads.
 
 ### Step 3: Check the backend health endpoint
 
@@ -64,7 +77,11 @@ curl http://localhost:4000/api/health
 kubectl port-forward svc/grafana -n oranje-markt 3001:3001
 ```
 
-Open <http://localhost:3001> (default credentials: `admin` / `admin`). Explore the pre-built dashboards for pod metrics, API latency, and error rates.
+Open <http://localhost:3001> (default credentials: `admin` / `admin`). Explore the pre-built dashboards:
+
+- **App Dashboard:** Request rate, error rate, response time percentiles
+- **DB Dashboard:** PostgreSQL connections, query latency
+- **Infrastructure Dashboard:** Node CPU/memory, pod resource usage
 
 ### Step 5: Check resource usage
 
@@ -86,13 +103,14 @@ postgres-0                  2m           40Mi
 
 Write down your steady-state definition. Example:
 
-| Metric | Steady-State Value |
-|--------|-------------------|
-| Pod status | All 3 pods `Running`, `READY 1/1` |
-| Backend response time | < 200 ms (p95) |
-| Error rate | 0% |
-| CPU usage | < 50% of limits |
-| Pod restarts | 0 |
+| Metric | Steady-State Value (example) | Your Value |
+|--------|------------------------------|------------|
+| Pod status | All pods `Running`, `READY 1/1` | |
+| Backend response time | < 200 ms (p95) | |
+| Error rate | 0% | |
+| CPU usage | < 50% of limits (e.g., ~5m idle) | |
+| Memory usage | Backend ~36Mi, Frontend ~60Mi | |
+| Pod restarts | 0 | |
 
 ### Discussion Answer
 
@@ -127,6 +145,11 @@ $POD = kubectl get pods -n oranje-markt -l app=backend `
   -o jsonpath='{.items[0].metadata.name}'
 kubectl delete pod -n oranje-markt $POD
 ```
+
+> **Tip:** By default, deletion waits ~30s for graceful termination. For simulating abrupt failures, use:
+> ```powershell
+> kubectl delete pod -n oranje-markt $POD --grace-period=0 --force
+> ```
 
 ### Step 4: Observe and measure
 
@@ -279,7 +302,7 @@ kubectl rollout restart deployment/backend -n oranje-markt
 
 ```powershell
 kubectl get deployment backend -n oranje-markt `
-  -o jsonpath='{.spec.template.spec.containers[0].env}' | ConvertFrom-Json
+  -o jsonpath='{.spec.template.spec.containers[0].env}'
 ```
 
 The `DATABASE_URL` is most likely sourced from the Secret `postgres-secret` via `secretKeyRef`. Note the current configuration so you can restore it.
@@ -293,6 +316,8 @@ kubectl set env deployment/backend -n oranje-markt `
 
 This triggers a rolling update — Kubernetes creates a new pod with the wrong `DATABASE_URL`.
 
+> **Note:** The `DATABASE_URL` is normally sourced from a Kubernetes Secret (`postgres-secret`) via `valueFrom.secretKeyRef`. Using `kubectl set env` replaces the secret reference with a literal value. When you run `kubectl rollout undo`, it restores the original secret reference.
+
 ### Step 3: Observe the failure
 
 ```powershell
@@ -304,6 +329,8 @@ kubectl logs -n oranje-markt -l app=backend -f
 ```
 
 **Expected:** The new backend pod will fail to connect to the database. The init container `db-migrate` will fail (Prisma can't run migrations against a non-existent host), putting the pod into `Init:Error` or `CrashLoopBackOff`.
+
+> **Note:** The `db-migrate` init container has built-in retry logic (up to 15 attempts with 2s delay). The pod will stay in `Init:0/1` for up to ~30 seconds before transitioning to `Init:Error` and eventually `CrashLoopBackOff`. Be patient — the error is not immediate.
 
 ```
 backend-yyyyy   0/1     Init:0/1          0     0s
@@ -385,6 +412,8 @@ Write-Host "Draining node: $NODE"
 kubectl drain $NODE --ignore-daemonsets --delete-emptydir-data --grace-period=30
 ```
 
+> **Note:** AKS system components (coredns, metrics-server, konnectivity-agent) have their own PDBs. The drain command may take 2+ minutes as it retries evictions for these system pods. This is normal — be patient.
+
 ### Step 3: Observe rescheduling
 
 ```powershell
@@ -404,6 +433,7 @@ kubectl describe pod -n oranje-markt <pending-pod-name>
 Common causes:
 - Not enough resources on remaining nodes (each node has only 2 vCPU / 8 GiB)
 - PVC affinity — `postgres-0`'s PVC may be bound to a specific availability zone
+- Single-node cluster — if there is only 1 node, all evicted pods stay `Pending` (see [Common Issues](#common-issues))
 
 ### Step 5: Uncordon the node
 
@@ -444,9 +474,11 @@ All nodes should show `Ready` and all pods should be `Running` with `READY 1/1`.
 ### Step 1: Start simple load (1 client)
 
 ```powershell
-kubectl run load-test-1 --image=busybox --restart=Never -n oranje-markt `
+kubectl run load-test-1 --image=busybox --restart=Never --labels=chaos=load-test -n oranje-markt `
   -- /bin/sh -c "while true; do wget -q -O- http://backend:4000/api/products > /dev/null 2>&1; done"
 ```
+
+> **Note:** Depending on your backend's CPU limit, even a single load test pod may saturate the backend. With a `500m` CPU limit, you may see CPU throttling immediately. This demonstrates how tight resource limits can make a single-replica service extremely fragile under load.
 
 ### Step 2: Monitor resources
 
@@ -462,7 +494,7 @@ Run this repeatedly (every 10–15 seconds) to see CPU and memory trends.
 
 ```powershell
 2..10 | ForEach-Object {
-  kubectl run "load-test-$_" --image=busybox --restart=Never -n oranje-markt `
+  kubectl run "load-test-$_" --image=busybox --restart=Never --labels=chaos=load-test -n oranje-markt `
     -- /bin/sh -c "while true; do wget -q -O- http://backend:4000/api/products > /dev/null 2>&1; done"
 }
 ```
@@ -499,9 +531,7 @@ kubectl describe pod -n oranje-markt -l app=backend | Select-String -Pattern "St
 ### Step 6: Clean up load tests
 
 ```powershell
-1..10 | ForEach-Object {
-  kubectl delete pod "load-test-$_" -n oranje-markt --ignore-not-found
-}
+kubectl delete pod -n oranje-markt -l chaos=load-test --ignore-not-found
 ```
 
 ### Discussion Answer
@@ -530,7 +560,7 @@ kubectl describe pod -n oranje-markt -l app=backend | Select-String -Pattern "St
 ### Step 1: Delete load test pods
 
 ```powershell
-kubectl delete pods -n oranje-markt -l run --ignore-not-found
+kubectl delete pods -n oranje-markt -l chaos=load-test --ignore-not-found
 ```
 
 ### Step 2: Uncordon any drained nodes
@@ -544,7 +574,15 @@ kubectl get nodes -o jsonpath='{.items[*].metadata.name}' | `
 ### Step 3: Roll back any deployment changes
 
 ```powershell
-kubectl rollout undo deployment/backend -n oranje-markt 2>$null
+# Only rollback if DATABASE_URL is a literal (not using secretKeyRef)
+$secretRef = kubectl get deployment backend -n oranje-markt `
+  -o jsonpath='{.spec.template.spec.containers[0].env[0].valueFrom.secretKeyRef.name}' 2>$null
+if (-not $secretRef) {
+  Write-Host "DATABASE_URL is a literal value — rolling back to secret-based config"
+  kubectl rollout undo deployment/backend -n oranje-markt
+} else {
+  Write-Host "DATABASE_URL is already using secretKeyRef ($secretRef) — no rollback needed"
+}
 ```
 
 ### Step 4: Restore PVC if deleted
@@ -570,10 +608,15 @@ kubectl get nodes
 **Expected:**
 
 ```
-NAME                        READY   STATUS    RESTARTS   AGE
-backend-xxxxxxxxx-xxxxx     1/1     Running   0          1m
-frontend-xxxxxxxxx-xxxxx    1/1     Running   0          30m
-postgres-0                  1/1     Running   0          30m
+NAME                             READY   STATUS    RESTARTS   AGE
+backend-xxxxxxxxx-xxxxx          1/1     Running   0          1m
+frontend-xxxxxxxxx-xxxxx         1/1     Running   0          30m
+grafana-xxxxxxxxx-xxxxx          1/1     Running   0          30m
+loki-xxxxxxxxx-xxxxx             1/1     Running   0          30m
+postgres-0                       1/1     Running   0          30m
+postgres-exporter-xxxxx-xxxxx    1/1     Running   0          30m
+prometheus-xxxxxxxxx-xxxxx       1/1     Running   0          30m
+promtail-xxxxx                   1/1     Running   0          30m
 ```
 
 All pods `Running`, `READY 1/1`, 0 recent restarts. All nodes `Ready`. ✅
@@ -591,3 +634,36 @@ All pods `Running`, `READY 1/1`, 0 recent restarts. All nodes `Ready`. ✅
 | 5 — Drain Node | All pods on node | `uncordon` + reschedule | PDBs prevent simultaneous eviction |
 | 6 — Load Test | Performance degradation | Delete load pods | Know your limits; use HPA and proper resource settings |
 | 7 — Cleanup | N/A | Manual restoration | Always clean up after experiments |
+
+---
+
+## Common Issues
+
+Issues you may encounter during the lab and how to resolve them.
+
+### Single-node cluster — drain always times out
+
+If your cluster has only 1 node (check with `kubectl get nodes`), draining that node means there is **no other node** to reschedule pods to. All evicted pods will stay `Pending` indefinitely.
+
+**Fix:** Uncordon the node immediately with `kubectl uncordon <node-name>`. Pods will be rescheduled back to the same node. For a more realistic drain experiment, ensure the cluster has at least 2 nodes.
+
+### `rollout undo` ping-pong after Challenge 4
+
+After Challenge 4 changes `DATABASE_URL` to a literal wrong host and you roll it back, the deployment has (at minimum) 2 revisions: the original (secretKeyRef) and the broken one. Running `rollout undo` without specifying a revision **toggles** between these two, potentially re-breaking the backend.
+
+**Fix:** Always check the current config before rolling back:
+```powershell
+kubectl get deployment backend -n oranje-markt `
+  -o jsonpath='{.spec.template.spec.containers[0].env}'
+```
+If `DATABASE_URL` is already using `secretKeyRef`, no rollback is needed.
+
+### Duplicate promtail pods after drain
+
+After draining and uncordoning a node, the `promtail` DaemonSet may temporarily create a second pod. This is normal — the DaemonSet controller ensures exactly one pod per node, and the extra pod will be terminated automatically.
+
+### PVC zone affinity — postgres-0 stuck in Pending
+
+After draining a node, `postgres-0` may get stuck in `Pending` if its PVC (`postgres-data`) is bound to a specific availability zone and the remaining node(s) are in a different zone. Azure Managed Disks are zone-specific.
+
+**Fix:** Uncordon the original node so `postgres-0` can be scheduled back to the zone where its PVC resides. Alternatively, delete the PVC and recreate it (this will **lose all data**).
