@@ -1,4 +1,8 @@
 # Hardened backend deployment: 3 replicas, topology spread, PDB, and HPA
+#
+# IMPORTANT: Before applying, replace ACR_REGISTRY with your team's ACR:
+#   export ACR_REGISTRY=$(kubectl get deploy backend -n oranje-markt -o jsonpath='{.spec.template.spec.containers[0].image}' | cut -d/ -f1)
+#   sed "s|ACR_REGISTRY|$ACR_REGISTRY|g" 01-backend-hardened.yaml | kubectl apply -f -
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -20,15 +24,32 @@ spec:
       topologySpreadConstraints:
         - maxSkew: 1
           topologyKey: kubernetes.io/hostname
-          whenUnsatisfiable: DoNotSchedule
+          whenUnsatisfiable: ScheduleAnyway
           labelSelector:
             matchLabels:
               app: backend
       initContainers:
         - name: db-migrate
-          image: devaihackathonacr.azurecr.io/oranje-markt-backend:latest
+          image: ACR_REGISTRY/oranje-markt-backend:latest
           imagePullPolicy: IfNotPresent
-          command: ["sh", "-c", "npx prisma migrate deploy && npx prisma db seed || echo 'Seed skipped'"]
+          command:
+            - "sh"
+            - "-c"
+            - |
+              echo "Waiting for database to be ready..."
+              MAX_RETRIES=15
+              RETRY_INTERVAL=2
+              for i in $(seq 1 $MAX_RETRIES); do
+                if npx prisma migrate deploy; then
+                  echo "Migrations applied successfully"
+                  npx prisma db seed || echo 'Seed skipped'
+                  exit 0
+                fi
+                echo "Database not ready (attempt $i/$MAX_RETRIES), retrying in ${RETRY_INTERVAL}s..."
+                sleep $RETRY_INTERVAL
+              done
+              echo "ERROR: Database not reachable after $MAX_RETRIES attempts"
+              exit 1
           env:
             - name: DATABASE_URL
               valueFrom:
@@ -37,7 +58,7 @@ spec:
                   key: DATABASE_URL
       containers:
         - name: backend
-          image: devaihackathonacr.azurecr.io/oranje-markt-backend:latest
+          image: ACR_REGISTRY/oranje-markt-backend:latest
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 4000

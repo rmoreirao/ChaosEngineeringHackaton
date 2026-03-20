@@ -12,6 +12,13 @@
 >
 > **AI tools used:** GitHub Copilot (Chat / Agent Mode) with the repo as context.
 
+> ⚠️ **ACR Note:** The solution manifests use `ACR_REGISTRY` as a placeholder for the container registry. Before applying any manifest, replace it with your team's ACR:
+> ```bash
+> export ACR_REGISTRY=$(kubectl get deploy backend -n oranje-markt -o jsonpath='{.spec.template.spec.containers[0].image}' | cut -d/ -f1)
+> sed "s|ACR_REGISTRY|$ACR_REGISTRY|g" <manifest-file> | kubectl apply -f -
+> ```
+> **Alternative (simpler):** Use `kubectl scale` for replica changes and apply PDB/HPA resources separately (they don't reference images).
+
 ---
 
 ## Solution 1 — From Experiments to Improvements: AI Resilience Analysis
@@ -20,8 +27,15 @@
 
 ### Step 1: Open the repo with Copilot
 
-Everything the AI needs is in the repository — no need to export YAMLs from the cluster:
+Everything the AI needs is in the repository — no need to export YAMLs from the cluster. Use one of these methods:
 
+| Tool | How to provide repo context |
+|------|---------------------------|
+| **VS Code Copilot Chat** | Open the repo folder, use **Agent Mode** — Copilot automatically sees your workspace |
+| **Copilot CLI** | `cd` into the repo folder — it reads files on demand |
+| **VS Code Chat (manual)** | Reference files with `#file:infra/k8s/backend/deployment.yaml` |
+
+Key paths for context:
 - **Kubernetes manifests:** `infra/k8s/` (backend, frontend, postgres deployments, services, observability stack)
 - **Backend source code:** `backend/src/` (Express server, routes, middleware, Prisma client, health endpoint)
 - **Frontend source code:** `frontend/src/` (Next.js app, API client, components)
@@ -31,7 +45,7 @@ Everything the AI needs is in the repository — no need to export YAMLs from th
 
 ### Step 2: Prompt Copilot for a cross-layer resilience assessment
 
-Use **Agent Mode** or **Copilot Chat** with the repo open. Combine repo context with experiment findings:
+Use **Agent Mode** or **Copilot Chat** with the repo open. Combine repo context with experiment findings — **replace the example findings below with your own observations from Labs 1-2:**
 
 ```text
 Look at this repository — it contains a 3-tier application (Next.js frontend, Express backend, PostgreSQL) deployed on AKS.
@@ -97,8 +111,33 @@ Look at the backend deployment in infra/k8s/backend/ and improve it:
 
 #### Apply the hardened backend:
 
+> ⚠️ The solution manifests use `ACR_REGISTRY` as a placeholder. Replace it with your team's ACR before applying.
+
 ```bash
-kubectl apply -f labs/lab3-ai-driven-resilience/solutions/manifests/01-backend-hardened.yaml
+# Discover your team's ACR
+export ACR_REGISTRY=$(kubectl get deploy backend -n oranje-markt -o jsonpath='{.spec.template.spec.containers[0].image}' | cut -d/ -f1)
+
+# Apply with ACR substitution
+sed "s|ACR_REGISTRY|$ACR_REGISTRY|g" labs/lab3-ai-driven-resilience/solutions/manifests/01-backend-hardened.yaml | kubectl apply -f -
+```
+
+**Alternative (simpler, no ACR issues):** Use `kubectl scale` + apply only the PDB/HPA:
+
+```bash
+kubectl scale deployment/backend -n oranje-markt --replicas=3
+# Extract only the PDB and HPA from the solution manifest (skip the Deployment):
+kubectl apply -f - <<'EOF'
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: backend-pdb
+  namespace: oranje-markt
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: backend
+EOF
 ```
 
 #### Repeat for the frontend:
@@ -106,7 +145,7 @@ kubectl apply -f labs/lab3-ai-driven-resilience/solutions/manifests/01-backend-h
 Use the same approach, or apply the reference solution directly:
 
 ```bash
-kubectl apply -f labs/lab3-ai-driven-resilience/solutions/manifests/02-frontend-hardened.yaml
+sed "s|ACR_REGISTRY|$ACR_REGISTRY|g" labs/lab3-ai-driven-resilience/solutions/manifests/02-frontend-hardened.yaml | kubectl apply -f -
 ```
 
 #### Verify:
@@ -188,6 +227,19 @@ This prevents the cascading restart discovered in Lab 2: when the DB is down, ba
 
 ### Validate replicas + PDB (if Option A was implemented)
 
+#### Set Up Continuous Health Monitoring
+
+Open a **separate terminal** and run a continuous health check to measure downtime during experiments:
+
+```bash
+kubectl port-forward svc/backend -n oranje-markt 4000:4000 &
+while true; do
+  CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:4000/api/health 2>/dev/null)
+  echo "$(date +%H:%M:%S) — HTTP $CODE"
+  sleep 1
+done
+```
+
 #### Test 1: Kill a backend pod
 
 ```bash
@@ -246,6 +298,8 @@ Produce a brief before/after comparison.
 | Kill postgres-0 | Cascading backend restart | PDB blocks drain; backend stays up (if health separated) | ✅ Protected |
 | Load test (5 clients) | CPU saturates at 500m | HPA scales to handle load | ✅ Auto-scaled |
 
+> **Tip:** You can also run [`scripts/detect-anomalies.sh`](scripts/detect-anomalies.sh) after injecting chaos to get an automated health report across pods, services, and events.
+
 ---
 
 ## Solution 4 — Cleanup & Final State
@@ -260,9 +314,11 @@ kubectl get hpa -n oranje-markt
 
 ### Option B: Restore to original (fragile) state
 
+Use `kubectl scale` to restore — do **not** re-apply the repo manifests as they may reference a different ACR:
+
 ```bash
-kubectl apply -f infra/k8s/backend/deployment.yaml
-kubectl apply -f infra/k8s/frontend/deployment.yaml
+kubectl scale deployment/backend -n oranje-markt --replicas=1
+kubectl scale deployment/frontend -n oranje-markt --replicas=1
 kubectl delete pdb -n oranje-markt --all
 kubectl delete hpa -n oranje-markt --all
 kubectl delete cronjob postgres-backup -n oranje-markt --ignore-not-found

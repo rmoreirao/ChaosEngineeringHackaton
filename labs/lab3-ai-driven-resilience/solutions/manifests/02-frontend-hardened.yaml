@@ -1,4 +1,8 @@
 # Hardened frontend deployment: 3 replicas, topology spread, PDB, and HPA
+#
+# IMPORTANT: Before applying, replace ACR_REGISTRY with your team's ACR:
+#   export ACR_REGISTRY=$(kubectl get deploy frontend -n oranje-markt -o jsonpath='{.spec.template.spec.containers[0].image}' | cut -d/ -f1)
+#   sed "s|ACR_REGISTRY|$ACR_REGISTRY|g" 02-frontend-hardened.yaml | kubectl apply -f -
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -20,13 +24,13 @@ spec:
       topologySpreadConstraints:
         - maxSkew: 1
           topologyKey: kubernetes.io/hostname
-          whenUnsatisfiable: DoNotSchedule
+          whenUnsatisfiable: ScheduleAnyway
           labelSelector:
             matchLabels:
               app: frontend
       containers:
         - name: frontend
-          image: devaihackathonacr.azurecr.io/oranje-markt-frontend:latest
+          image: ACR_REGISTRY/oranje-markt-frontend:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 3000
