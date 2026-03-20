@@ -2,204 +2,229 @@
 
 ## Objective
 
-Apply lessons learned from Labs 1 and 2 to **harden the Oranje Markt application** using AI-assisted tools. Use GitHub Copilot to generate resilience configurations, build automated detection, and create operational runbooks.
+Labs 1 and 2 took you through the chaos engineering lifecycle: identifying risks, forming hypotheses, injecting failures, and observing results. Now it's time for the final phase — **Learn & Improve**.
+
+In this lab you will use GenAI to **analyze your chaos experiment findings**, generate a **prioritized resilience roadmap** across all layers of the application, and **implement 1-2 quick wins** to harden the system — then prove they work by re-running chaos experiments.
 
 By the end of this lab you will:
-- Use AI to generate hardened Kubernetes manifests (replicas, PDBs, HPA, topology spread)
-- Improve database resilience with AI-suggested strategies
-- Build a simple anomaly detection script with Copilot's help
-- Create a resilience runbook for the application
-- Validate improvements by re-running chaos experiments from Lab 1
+- Understand how AI can turn chaos experiment findings into actionable improvements across K8s, infrastructure, observability, and code
+- Implement 1-2 concrete resilience fixes using AI-generated manifests or configurations
+- Validate improvements by re-running a chaos experiment and comparing before/after results
 
 ## Prerequisites
 - Completed Lab 1 and Lab 2
-- Understanding of failures observed (pod kills, database failures, load issues)
-- GitHub Copilot available
+- Your chaos experiment findings from Labs 1-2 (FMA, experiment reports, observed failures)
+- GitHub Copilot available (VS Code Chat, Copilot CLI, or Agent Mode)
 - `kubectl` connected to the AKS cluster
 
 ---
 
-## Challenge 1 — Generate Resilience Improvements with AI
+## Challenge 1 — From Experiments to Improvements: AI Resilience Analysis
 
-**Goal:** Based on failures observed in Labs 1-2, use GitHub Copilot to generate hardened Kubernetes manifests that address the weaknesses you discovered.
+**Goal:** Feed your chaos experiment findings and the application architecture to AI, and get back a **prioritized resilience improvement roadmap** that spans all layers of the system.
 
-**Requirements:**
-1. Ask GitHub Copilot to improve the backend deployment. Example prompts:
-   - "Add a Pod Disruption Budget for this Kubernetes deployment that ensures at least 1 pod is always available: [paste current backend deployment YAML]"
-   - "Increase this deployment to 3 replicas and add topology spread constraints to distribute pods across nodes"
-   - "Create a Horizontal Pod Autoscaler for the backend deployment with min 2, max 5 replicas, targeting 70% CPU"
-2. Review each generated manifest for correctness
-3. Apply the improvements:
-   ```bash
-   kubectl apply -f <generated-manifest>
-   ```
-4. **Validate:** Re-run a chaos experiment from Lab 1 (e.g., kill a pod, drain a node) and compare the result
-   - With 1 replica: pod kill = full outage
-   - With 3 replicas + PDB: pod kill = zero downtime
+### Step 1 — Point AI at the Repository
 
-**What to observe:**
-- Does the app stay available when you kill a pod now?
-- Does the PDB prevent all pods from being evicted during node drain?
-- Does the HPA scale up under load?
-- How does the behavior compare to Lab 1?
+Everything the AI needs is already in the GitHub repo — no need to export YAMLs from the cluster. The repo contains the full picture:
 
-**Hints:**
-- Start with replicas (easiest win), then add PDB, then HPA
-- Use `kubectl get pdb -n oranje-markt` to verify PDB status
-- Use `kubectl get hpa -n oranje-markt -w` to watch autoscaling in action
-- The HPA needs the metrics-server to be running (already part of AKS)
-- For the topology spread constraint, use `topologyKey: kubernetes.io/hostname`
+- **Kubernetes manifests:** `infra/k8s/` (backend, frontend, postgres deployments, services, observability stack)
+- **Backend source code:** `backend/src/` (Express server, routes, middleware, Prisma client, health endpoint)
+- **Frontend source code:** `frontend/src/` (Next.js app, API client, components)
+- **Infrastructure-as-Code:** `infra/azure/` (Bicep templates for AKS, networking, ACR)
+- **Observability config:** `infra/observability/` (Prometheus scrape config, Grafana dashboards, Loki setup)
+- **Database schema:** `backend/prisma/schema.prisma`
 
-> **Discussion:** What is the minimum set of resilience configurations every production deployment should have? How do you decide between `minAvailable` and `maxUnavailable` in a PDB?
+### Step 2 — Ask AI for a Cross-Layer Resilience Assessment
 
----
+Open the repo in your IDE with Copilot and use **Agent Mode** or **Chat** with the repo as context. Combine the source code context with your experiment findings from Labs 1-2.
 
-## Challenge 2 — Harden the Database
+Example prompt:
 
-**Goal:** Use AI to propose and implement database resilience strategies for the in-cluster PostgreSQL.
+> *"Look at this repository — it contains a 3-tier application (Next.js frontend, Express backend, PostgreSQL) deployed on AKS. Review the Kubernetes manifests in `infra/k8s/`, the backend code in `backend/src/`, the frontend code in `frontend/src/`, and the observability setup in `infra/observability/`.*
+>
+> *We ran chaos experiments and found these issues:*
+> *1. Killing a backend pod causes ~30s downtime (single replica)*
+> *2. Killing the database pod causes cascading failure — backend's liveness probe restarts it too*
+> *3. Node drain evicts all pods simultaneously (no PDBs)*
+> *4. Load test with 5 clients saturates backend CPU at 500m limit*
+>
+> *Based on the actual source code and infrastructure config, what are the top resilience improvements? Organize by layer: Kubernetes, Infrastructure, Observability, and Application Code. Prioritize by impact and effort."*
 
-**Requirements:**
-1. Paste the current PostgreSQL StatefulSet YAML into Copilot and ask:
-   - "How can I make this PostgreSQL StatefulSet more resilient? It currently runs as a single pod with no replication."
-   - "Create a Kubernetes CronJob that backs up this PostgreSQL database every hour using pg_dump"
-2. Implement at least one improvement:
-   - Option A: Add a PDB for PostgreSQL (`minAvailable: 1`)
-   - Option B: Create a backup CronJob using `pg_dump`
-   - Option C: Ask Copilot about migrating to Azure Database for PostgreSQL Flexible Server (discussion only)
-3. Test the improvement:
-   - If PDB: try draining the node running postgres — the drain should block
-   - If backup: verify the CronJob creates a backup, then kill the database pod and restore from backup
+### Step 3 — Review the Roadmap
 
-**What to observe:**
-- How does a PDB protect a single-replica StatefulSet?
-- Does the backup CronJob run successfully?
-- How would migration to a managed database service change the architecture?
+The AI should produce a structured improvement plan covering multiple layers. Look for improvements like:
 
-**Hints:**
-- For the backup CronJob, the pod needs the PostgreSQL client tools (`postgres:16-alpine` image has them)
-- The database credentials are in the `postgres-secret` Secret
-- A PDB on a single-replica StatefulSet will block node drains — this is a feature, not a bug
-- Use `kubectl get cronjob -n oranje-markt` to check the CronJob status
+| Layer | Improvement | Impact | Effort |
+|-------|-------------|--------|--------|
+| **Kubernetes** | Increase replicas to 3 + add PodDisruptionBudget | High — eliminates single-pod downtime | Low |
+| **Kubernetes** | Add HorizontalPodAutoscaler | High — handles load spikes automatically | Low |
+| **Kubernetes** | Add topology spread constraints | Medium — distributes pods across nodes | Low |
+| **Infrastructure** | Database backup CronJob | High — enables data recovery | Medium |
+| **Observability** | Add Prometheus alerting rules for error rate & pod restarts | High — proactive failure detection | Medium |
+| **Observability** | Persistent storage for Prometheus/Loki (PVC instead of EmptyDir) | Medium — retain metrics across restarts | Medium |
+| **Code** | Add retry logic with backoff to database queries | High — handles transient failures | Medium |
+| **Code** | Separate liveness from readiness probe (don't check DB in liveness) | High — prevents cascading restart | Low |
+| **Code** | Add graceful shutdown handler (SIGTERM) | Medium — drain in-flight requests | Low |
 
-> **Discussion:** When is it appropriate to run a database in Kubernetes vs. using a managed service? What are the trade-offs of each approach?
+> **Key insight:** Notice how the AI identifies improvements across **all layers** — not just Kubernetes manifests. Resilience is a cross-cutting concern: K8s configurations, infrastructure architecture, observability, and application code all play a role.
+
+> **Discussion:** Which improvements would you prioritize first? Why? How does the AI's prioritization compare to your own judgment after running the experiments?
 
 ---
 
-## Challenge 3 — Build a Simple Detection Script
+## Challenge 2 — Implement Quick Wins with AI
 
-**Goal:** Create a script (with GitHub Copilot's help) that detects anomalies in the Oranje Markt namespace — an early warning system.
+**Goal:** Pick 1-2 improvements from the roadmap and use AI to generate and apply the fix.
 
-**Requirements:**
-1. Use GitHub Copilot CLI or Copilot Chat to generate a shell script that:
-   - Lists all pods in `oranje-markt` namespace and flags any that are NOT in `Running` state
-   - Checks for pods with high restart counts (> 3 restarts)
-   - Checks if any Service endpoints are empty (no backends serving traffic)
-   - Outputs results as a simple report (console output or JSON)
-2. Example prompt for Copilot CLI:
-   ```
-   gh copilot suggest "Write a bash script that checks all pods in namespace oranje-markt for non-Running status, high restart counts over 3, and empty service endpoints, and prints a report"
-   ```
-3. Run the script against your cluster
-4. Introduce a failure (kill a pod) and run it again — verify it detects the issue
+### Choose Your Improvement(s)
 
-**What to observe:**
-- Does the AI-generated script work out of the box or need modifications?
-- What anomalies does it catch? What does it miss?
-- How would you extend it to run continuously (cron, watch loop)?
+Select from the roadmap based on your team's interest. Here are suggested options, roughly ordered by impact and ease:
 
-**Hints:**
-- Keep it simple: bash + kubectl is fine. No need for Python or complex tooling
-- Use `kubectl get pods -n oranje-markt -o json` for structured output
-- Use `kubectl get endpoints -n oranje-markt -o json` for endpoint checks
-- `jq` is useful for parsing JSON output from kubectl
-- The script doesn't need to be perfect — it's a starting point
+#### Option A: Add Replicas + PodDisruptionBudget (Recommended First Pick)
 
-> **Discussion:** How does a simple detection script compare to a full observability stack (Prometheus alerts)? When would you use each?
+This is the highest-impact, lowest-effort improvement. Ask Copilot:
 
----
+> *"Look at the backend deployment in `infra/k8s/backend/` and improve it: increase to 3 replicas, add a PodDisruptionBudget with minAvailable: 1, and add topology spread constraints to distribute pods across nodes. Also generate a startup probe since the init container (db-migrate) adds ~20s delay."*
 
-## Challenge 4 — Design a Resilience Runbook
-
-**Goal:** Use AI to create a resilience runbook for the Oranje Markt application — a documented set of procedures for handling common failures.
-
-**Requirements:**
-1. Ask GitHub Copilot to generate a runbook covering these failure scenarios:
-   - **Pod failure**: A backend or frontend pod crashes
-   - **Database failure**: PostgreSQL pod is unresponsive
-   - **Node failure**: An AKS node goes NotReady
-   - **High load**: Application is under heavy traffic
-   - **Deployment failure**: New deployment is stuck in CrashLoopBackOff
-2. Each runbook entry should follow this format:
-   - **Detection**: How to detect the issue (commands, metrics, alerts)
-   - **Diagnosis**: How to determine root cause (logs, events, kubectl commands)
-   - **Remediation**: Step-by-step fix procedures
-   - **Verification**: How to confirm the fix worked
-   - **Prevention**: How to prevent recurrence
-3. Review and customize the AI-generated runbook for the Oranje Markt application
-4. Test at least one runbook entry by simulating the failure and following the procedure
-
-**What to observe:**
-- How complete is the AI-generated runbook?
-- What gaps did you find that need human expertise to fill?
-- How useful would this be for an on-call engineer at 3 AM?
-
-**Hints:**
-- Provide Copilot with the architecture context: "3-tier app on AKS with frontend, backend, PostgreSQL"
-- Ask for specific kubectl commands, not just general advice
-- Include the monitoring commands (Grafana URLs, Prometheus queries)
-- A good runbook should be usable by someone who didn't build the system
-
-> **Discussion:** How can AI help build and maintain operational runbooks? What is the human role in validating and updating AI-generated procedures?
-
----
-
-## Challenge 5 — Cleanup & Final State
-
-Apply all your resilience improvements and demonstrate the hardened architecture:
-
+Apply the generated manifests:
 ```bash
-# Verify resilience improvements
-kubectl get deployments -n oranje-markt    # Should show multiple replicas
-kubectl get pdb -n oranje-markt            # Should show PDBs
-kubectl get hpa -n oranje-markt            # Should show HPA (if created)
-
-# Run a final chaos experiment to prove resilience
-# Kill a backend pod — app should stay available
-kubectl delete pod -n oranje-markt -l app=backend --wait=false
-
-# Verify zero downtime
-kubectl get pods -n oranje-markt -w
+kubectl apply -f <generated-hardened-backend.yaml>
+kubectl get pods -n oranje-markt -w    # Watch pods scale up
+kubectl get pdb -n oranje-markt        # Verify PDB is active
 ```
 
-If you want to restore to the original (fragile) state:
+#### Option B: Add HorizontalPodAutoscaler
+
+> *"Create a HorizontalPodAutoscaler for the backend deployment targeting 70% CPU utilization, with min 2 and max 5 replicas."*
+
 ```bash
-# Re-deploy original manifests
+kubectl apply -f <generated-hpa.yaml>
+kubectl get hpa -n oranje-markt -w     # Watch autoscaling decisions
+```
+
+#### Option C: Generate Prometheus Alerting Rules
+
+> *"Based on these chaos experiment findings [pod failures, DB cascading failure, CPU saturation], generate Prometheus alerting rules that would detect these issues. Look at the metrics middleware in `backend/src/middleware/metrics.ts` and the Prometheus config in `infra/observability/` to understand what metrics are available."*
+
+#### Option D: Code-Level Improvements (Advanced)
+
+> *"Look at the Prisma database client in `backend/src/lib/prisma.ts`. Add retry logic with exponential backoff for transient database failures."*
+
+Or:
+
+> *"Look at the health endpoint in `backend/src/server.ts` — it's used for both liveness and readiness probes, and it queries the database. When the database is down, Kubernetes kills the backend pod too (cascading failure). How should I separate liveness from readiness to prevent this?"*
+
+### Validate Your Changes
+
+After applying, verify everything is healthy:
+```bash
+kubectl get pods -n oranje-markt                    # All pods Running?
+kubectl get pdb -n oranje-markt                     # PDB active?
+kubectl get hpa -n oranje-markt                     # HPA tracking?
+kubectl port-forward svc/backend -n oranje-markt 4000:4000
+curl http://localhost:4000/api/health               # Health OK?
+```
+
+**Hints:**
+- Start with Option A (replicas + PDB) — it's the fastest path to proving resilience
+- Always review AI-generated manifests before applying (check namespace, resource names, image references)
+- Use `kubectl diff -f <manifest>` to preview changes before applying
+- If HPA doesn't scale, check that metrics-server is running: `kubectl get pods -n kube-system | grep metrics`
+
+---
+
+## Challenge 3 — Validate: Re-run Chaos Experiments
+
+**Goal:** Close the chaos engineering loop — prove your improvements work by re-running an experiment from Lab 1 and comparing before/after results.
+
+### Step 1 — Pick an Experiment
+
+Choose an experiment that matches your improvement:
+
+| If You Implemented... | Re-run This Experiment |
+|-----------------------|------------------------|
+| Replicas + PDB | Kill a backend pod (Lab 1, Challenge 2) |
+| Replicas + PDB | Drain a node (Lab 1, Challenge 5) |
+| HPA | Load test to breaking point (Lab 1, Challenge 6) |
+| Alerting rules | Kill a pod and check if alerts fire |
+
+### Step 2 — Run the Experiment
+
+Example — kill a backend pod (same as Lab 1):
+```bash
+# Before (Lab 1 result): single pod → ~30s full outage
+# After (Lab 3): 3 replicas + PDB → expect zero downtime
+
+kubectl delete pod -n oranje-markt -l app=backend --wait=false
+kubectl get pods -n oranje-markt -w   # Watch: remaining pods serve traffic while replacement starts
+```
+
+### Step 3 — Compare Results
+
+Ask Copilot to help analyze the before/after:
+
+> *"Compare these two chaos experiment results:*
+> *Before (1 replica, no PDB): Killing backend pod → 30s complete outage, 0 pods serving traffic during recovery*
+> *After (3 replicas, PDB): Killing backend pod → [paste your observations]*
+> *Produce a brief before/after comparison."*
+
+**Expected outcome with replicas + PDB:**
+- ✅ App remains available during pod kill (2 remaining pods serve traffic)
+- ✅ Node drain is blocked by PDB (prevents evicting below minAvailable)
+- ✅ Recovery is transparent to users (no downtime)
+
+> **Discussion:** How does the improvement change the risk score from Lab 2's FMA? What weaknesses remain?
+
+---
+
+## Challenge 4 — Cleanup & Wrap-up
+
+Verify your final state and prepare for the sharing session:
+
+```bash
+# Verify improvements are in place
+kubectl get deployments -n oranje-markt    # Replicas > 1?
+kubectl get pdb -n oranje-markt            # PDBs active?
+kubectl get hpa -n oranje-markt            # HPA tracking? (if created)
+
+# Verify app is healthy
+kubectl get pods -n oranje-markt
+```
+
+If you want to restore the original (fragile) state:
+```bash
 kubectl apply -f infra/k8s/backend/
 kubectl apply -f infra/k8s/frontend/
 kubectl delete pdb -n oranje-markt --all
 kubectl delete hpa -n oranje-markt --all
 ```
 
+### Prepare for Sharing
+Think about what you'll present:
+- What did the AI's resilience roadmap look like? What layers did it cover?
+- Which improvement(s) did you implement? Why those?
+- What was the before/after result of your validation experiment?
+- What would you tackle next from the roadmap?
+
 ---
 
 ## Summary
 
-| Concept | What You Should Have Learned |
-|---------|------------------------------|
-| **Resilience manifests** | AI can generate PDBs, HPA, topology spread, and replica improvements from existing YAML |
-| **Database hardening** | PDBs, backups, and managed service migration are key strategies for stateful workloads |
-| **Anomaly detection** | Simple scripts can provide early warning for common Kubernetes issues |
-| **Resilience runbooks** | AI-generated runbooks provide a starting point but need human review and customization |
-| **Validation** | Always re-run chaos experiments after improvements to prove they work |
+| Concept | What You Learned |
+|---------|------------------|
+| **AI resilience analysis** | GenAI can analyze chaos findings and produce improvement roadmaps across all layers — K8s, infra, observability, and code |
+| **Quick wins** | Replicas + PDB is the highest-impact, lowest-effort resilience improvement for most K8s workloads |
+| **Validation loop** | Always re-run chaos experiments after improvements to prove they work (before/after) |
+| **Cross-layer thinking** | Resilience isn't just K8s manifests — code (retries, circuit breakers), observability (alerting), and infra (backups, managed services) all matter |
 
 ## Key Takeaways
 
-1. **AI accelerates hardening**: Copilot can generate resilience configurations in seconds that would take minutes to write manually
-2. **Validate improvements with chaos**: The only way to prove resilience is to test it — re-run Lab 1 experiments
-3. **Defense in depth**: Replicas + PDB + HPA + monitoring = layers of protection
-4. **Runbooks save lives**: Documented procedures reduce incident response time
-5. **Continuous improvement**: Chaos engineering is not a one-time activity — it's an ongoing practice
+1. **Experiments → Improvements:** Chaos engineering isn't just about breaking things — the real value is in the improvements you make based on findings
+2. **AI accelerates the loop:** GenAI can turn raw experiment data into prioritized, actionable improvement plans in seconds
+3. **Start with quick wins:** Replicas + PDB eliminate the most common failure mode (single-pod outage) with minimal effort
+4. **All layers matter:** The AI roadmap should remind you that resilience spans code, K8s, observability, and infrastructure — don't stop at manifests
+5. **Validate, validate, validate:** The only way to prove resilience is to re-run the chaos experiment and compare
 
 ---
 
-> **Stuck?** Check the [solutions](solutions/) folder for hardened manifests, detection scripts, and a sample runbook.
+> **Stuck?** Check the [solutions](solutions/) folder for hardened manifests, example AI prompts, and expected outputs.

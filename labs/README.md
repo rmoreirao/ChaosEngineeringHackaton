@@ -14,6 +14,19 @@ The system is intentionally fragile. Your job is to find out exactly how fragile
 | [Lab 2](lab2-ai-driven-chaos/) | AI-Driven Chaos Experiments | ~45 min | Use AI tools to generate chaos experiments and diagnose failures |
 | [Lab 3](lab3-ai-driven-resilience/) | AI-Driven Resilience Improvement | ~15 min | Use AI tools to investigate failures and improve resilience |
 
+Each lab follows the same structure:
+
+```
+lab<N>/
+├── README.md              ← Challenge descriptions (start here)
+└── solutions/
+    ├── README.md          ← Step-by-step walkthroughs & discussion answers
+    ├── manifests/         ← Ready-to-use YAML files (broken & fixed)
+    └── scripts/           ← Helper scripts (Lab 3 only)
+```
+
+Start with the lab `README.md` and attempt the challenges on your own. If you get stuck, the `solutions/` subfolder has detailed walkthroughs, opinionated solution manifests, and example Copilot prompts with expected outputs.
+
 ## Prerequisites
 
 - AKS cluster deployed and running (see [`infra/azure/README.md`](../infra/azure/README.md))

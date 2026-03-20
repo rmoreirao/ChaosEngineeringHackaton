@@ -18,10 +18,10 @@ spec:
         app: chaos-resource
     spec:
       containers:
-        - name: backend
-          image: devaihackathonacr.azurecr.io/oranje-markt-backend:latest
+        - name: web
+          image: nginx:latest
           ports:
-            - containerPort: 4000
+            - containerPort: 80
           resources:
             requests:
               memory: "64Gi"

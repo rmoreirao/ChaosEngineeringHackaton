@@ -32,10 +32,14 @@ az aks get-credentials \
 kubelogin convert-kubeconfig -l azurecli
 ```
 
-Verify connectivity:
+Verify connectivity and confirm your environment is ready:
+
 ```bash
-kubectl get nodes
-kubectl get pods -n oranje-markt
+# Prerequisite verification
+az account show --query name -o tsv         # Confirm Azure login
+kubectl get nodes                            # Confirm cluster access
+kubectl get pods -n oranje-markt            # Confirm app is deployed
+kubectl get svc frontend -n oranje-markt    # Get frontend external IP
 ```
 
 ## Reference Documentation
@@ -53,8 +57,15 @@ kubectl get pods -n oranje-markt
 
 **Requirements:**
 
-- Access the Oranje Markt frontend via the LoadBalancer external IP
+- Access the Oranje Markt frontend via the LoadBalancer external IP:
+  ```bash
+  kubectl get svc frontend -n oranje-markt -o jsonpath='{.status.loadBalancer.ingress[0].ip}'
+  ```
 - Port-forward Grafana (`kubectl port-forward svc/grafana -n oranje-markt 3001:3001`) and explore dashboards
+  - **App Dashboard:** Request rate, error rate, response time percentiles
+  - **DB Dashboard:** PostgreSQL connections, query latency
+  - **Infrastructure Dashboard:** Node CPU/memory, pod resource usage
+  - Default Grafana credentials are typically `admin` / `admin` (change on first login)
 - Verify all pods are running: `kubectl get pods -n oranje-markt`
 - Browse the app: view products, search, add to cart
 - Define at least 3 steady-state metrics (e.g., API response time, error rate, pod status)
@@ -86,6 +97,10 @@ kubectl get pods -n oranje-markt
 
 - Form a hypothesis: "If I kill the backend pod, the app will..."
 - Delete the backend pod: `kubectl delete pod -n oranje-markt -l app=backend`
+- **Tip:** By default, deletion waits ~30s for graceful termination. For simulating abrupt failures, use:
+  ```bash
+  kubectl delete pod -n oranje-markt -l app=backend --grace-period=0 --force
+  ```
 - While the pod is restarting, try to use the app (browse products, search)
 - Measure the downtime: how long until the backend responds again?
 - Check: does the app fully recover or are there lingering issues?
@@ -150,6 +165,7 @@ kubectl get pods -n oranje-markt
   ```bash
   kubectl set env deployment/backend -n oranje-markt DATABASE_URL="postgresql://oranje:oranje123@wrong-host:5432/oranjedb"
   ```
+  > **Note:** The `DATABASE_URL` is normally sourced from a Kubernetes Secret (`postgres-secret`) via `valueFrom.secretKeyRef`. Using `kubectl set env` replaces the secret reference with a literal value. When you run `kubectl rollout undo`, it restores the original secret reference.
 - Approach 2 — Exec into pod: Use `kubectl exec` to simulate DNS failure inside the backend pod
 - Observe: does the backend crash or return errors gracefully?
 - Restore the original configuration after testing
@@ -196,6 +212,7 @@ kubectl get pods -n oranje-markt
 
 - Use `-o wide` to see node assignments
 - The drain will fail if it violates a PDB — but we don't have PDBs yet (that's a Lab 3 improvement!)
+- > **Note:** AKS system components (coredns, metrics-server, konnectivity-agent) have their own PDBs. The drain command may take 2+ minutes as it retries evictions for these system pods. This is normal — be patient.
 - If you only have 1 node with capacity, pods may stay in Pending
 - `kubectl get events --sort-by='.lastTimestamp'` shows the drain and reschedule timeline
 
@@ -213,14 +230,24 @@ kubectl get pods -n oranje-markt
 - You can use any tool: the existing `tests/load/` scripts, `kubectl run` with curl loops, or install a load testing tool
 - Simple approach with kubectl (use `--labels` so cleanup is easy):
   ```bash
-  kubectl run load-test-1 --image=busybox --restart=Never --labels="chaos=load-test" -n oranje-markt -- /bin/sh -c "while true; do wget -q -O- http://backend:4000/api/products; done"
+  kubectl run load-test-1 --image=busybox --restart=Never --labels=chaos=load-test -n oranje-markt -- /bin/sh -c "while true; do wget -q -O- http://backend:4000/api/products; done"
   ```
 - Scale up the load (run multiple load-test pods):
+
+  **Bash:**
   ```bash
   for i in $(seq 2 5); do
-    kubectl run load-test-$i --image=busybox --restart=Never --labels="chaos=load-test" -n oranje-markt \
+    kubectl run load-test-$i --image=busybox --restart=Never --labels=chaos=load-test -n oranje-markt \
       -- /bin/sh -c "while true; do wget -q -O- http://backend:4000/api/products; done"
   done
+  ```
+
+  **PowerShell:**
+  ```powershell
+  foreach ($i in 2..5) {
+    kubectl run "load-test-$i" --image=busybox --restart=Never --labels=chaos=load-test -n oranje-markt `
+      -- sh -c 'while true; do wget -q -O- http://backend:4000/api/products; done'
+  }
   ```
 - Monitor Grafana: CPU, memory, request rate, error rate
 - Identify the breaking point: at what load level does the app fail?
@@ -249,6 +276,7 @@ kubectl get pods -n oranje-markt
 
 Remove any temporary resources and restore the environment to its original state.
 
+**Bash:**
 ```bash
 # Delete load test pods
 kubectl delete pod -n oranje-markt -l chaos=load-test --ignore-not-found
@@ -258,6 +286,21 @@ kubectl get pods -n oranje-markt
 
 # Uncordon any drained nodes
 kubectl uncordon $(kubectl get nodes -o jsonpath='{.items[*].metadata.name}')
+
+# Verify steady state is restored
+kubectl top pods -n oranje-markt
+```
+
+**PowerShell:**
+```powershell
+# Delete load test pods
+kubectl delete pod -n oranje-markt -l chaos=load-test --ignore-not-found
+
+# Verify all original pods are running
+kubectl get pods -n oranje-markt
+
+# Uncordon any drained nodes
+kubectl get nodes -o jsonpath='{.items[*].metadata.name}' | ForEach-Object { kubectl uncordon $_ }
 
 # Verify steady state is restored
 kubectl top pods -n oranje-markt
