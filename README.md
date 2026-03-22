@@ -10,7 +10,7 @@ A full-stack Dutch specialty e-commerce application built for the Chaos Engineer
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────┐
-│                            Docker Compose                                │
+│                                                                          │
 │                                                                          │
 │  ┌──────────────┐     HTTP      ┌──────────────┐                        │
 │  │   Frontend   │◄────────────► │   Backend    │                        │
