@@ -340,6 +340,7 @@ infra/azure/
 ├── teams.json             ← team definitions for multi-team deploy
 ├── deploy-teams.ps1       ← deploy all teams (PowerShell)
 ├── assign-rbac.ps1        ← assign AKS + ACR roles per team (PowerShell)
+├── list-teams.ps1         ← list team environments (RG, AKS, frontend IP)
 ├── teardown-teams.ps1     ← tear down all teams (PowerShell)
 ├── main.bicep             ← orchestrator (subscription-level deployment)
 ├── main.bicepparam        ← parameter values (single-team reference)
