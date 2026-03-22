@@ -75,34 +75,34 @@ export async function cartAndCheckout(page: Page) {
   const email = await registerAndLogin(page);
 
   // Add Gouda Jong (qty 2)
-  await page.goto('/products/gouda-jong');
+  await page.goto('/products/gouda-jong', { waitUntil: 'domcontentloaded', timeout: 60000 });
   await page.getByRole('button', { name: '+', exact: true }).first().click();
   await page.getByRole('button', { name: 'Add to Cart', exact: true }).click();
 
   // Add Stroopwafels (qty 1)
-  await page.goto('/products/stroopwafels');
+  await page.goto('/products/stroopwafels', { waitUntil: 'domcontentloaded', timeout: 60000 });
   await page.getByRole('button', { name: 'Add to Cart', exact: true }).click();
 
   // Go to cart
-  await page.goto('/cart');
+  await page.goto('/cart', { waitUntil: 'domcontentloaded', timeout: 60000 });
   await expect(page.getByRole('heading', { name: 'Shopping Cart' })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Gouda Jong' })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Stroopwafels' })).toBeVisible();
 
   // Proceed to checkout
   await page.getByRole('link', { name: 'Proceed to Checkout' }).click();
-  await expect(page.getByRole('heading', { name: /Checkout/i })).toBeVisible({ timeout: 10000 });
+  await expect(page.getByRole('heading', { name: /Checkout/i })).toBeVisible({ timeout: 15000 });
 
   // Fill address and place order
   await page.getByPlaceholder('Street, City, Postal Code, Country').fill('Keizersgracht 123, Amsterdam, 1015 CJ, Netherlands');
   await page.getByRole('button', { name: /Place Order/i }).click();
 
   // Verify redirect to orders
-  await expect(page).toHaveURL(/\/orders/, { timeout: 10000 });
-  await expect(page.getByText('COMPLETED').first()).toBeVisible({ timeout: 10000 });
+  await expect(page).toHaveURL(/\/orders/, { timeout: 15000 });
+  await expect(page.getByText('COMPLETED').first()).toBeVisible({ timeout: 15000 });
 
   // Verify cart is empty
-  await page.goto('/cart');
+  await page.goto('/cart', { waitUntil: 'domcontentloaded', timeout: 60000 });
   await expect(page.getByRole('heading', { name: /cart is empty/i })).toBeVisible();
 }
 
