@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: traffic-generator
-          image: kadchaosteam3acr.azurecr.io/oranje-markt-traffic-generator:latest
+          image: devaihackathonacr.azurecr.io/oranje-markt-traffic-generator:latest
           imagePullPolicy: Always
           envFrom:
             - configMapRef:

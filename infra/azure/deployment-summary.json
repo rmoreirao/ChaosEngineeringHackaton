@@ -1,0 +1,7 @@
+{
+  "Team": "kad-chaos-team5",
+  "ResourceGroup": "rg-kad-chaos-team5",
+  "AKS": "kad-chaos-team5-aks",
+  "ACR": "kadchaosteam5acr",
+  "FrontendURL": "http://(pending)"
+}
