@@ -1,7 +1,0 @@
-{
-  "Team": "kad-chaos-team3",
-  "ResourceGroup": "rg-kad-chaos-team3",
-  "AKS": "kad-chaos-team3-aks",
-  "ACR": "kadchaosteam3acr",
-  "FrontendURL": "http://72.144.95.57"
-}
