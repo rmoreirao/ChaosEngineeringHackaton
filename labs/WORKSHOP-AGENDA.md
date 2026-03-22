@@ -52,8 +52,8 @@ Now that experiments are done, it's time to **improve the system based on your l
 
 | Challenge | Topic |
 |-----------|-------|
-| 1 | **From Experiments to Improvements** — Feed chaos findings + architecture to AI → get a prioritized resilience roadmap across all layers (K8s, infra, observability, code) |
-| 2 | **Implement Quick Wins with AI** — Pick 1-2 top recommendations and use AI to generate & apply the fix (e.g., replicas + PDB, alerting rules, or code-level retries) |
+| 1 | **AI Resilience Analysis** — Feed chaos findings + architecture to AI → get a prioritized resilience roadmap across all layers (K8s, infra, observability, code) |
+| 2 | **Implement Quick Wins** — Scale to 3 replicas + add PDB (required); HPA, alerting rules, or code-level retries as bonus |
 | 3 | **Validate** — Re-run a Lab 1 chaos experiment and compare before/after results |
 | 4 | Cleanup & wrap-up |
 

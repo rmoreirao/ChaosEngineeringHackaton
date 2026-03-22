@@ -12,7 +12,7 @@ The system is intentionally fragile. Your job is to find out exactly how fragile
 |-----|-------|----------|-------------|
 | [Lab 1](lab1-manual-chaos/) | Manual Chaos Experiments | ~60 min | Inject failures into Kubernetes microservices and observe results |
 | [Lab 2](lab2-ai-driven-chaos/) | AI-Driven Chaos Experiments | ~45 min | Use AI tools to generate chaos experiments and diagnose failures |
-| [Lab 3](lab3-ai-driven-resilience/) | AI-Driven Resilience Improvement | ~15 min | Use AI tools to investigate failures and improve resilience |
+| [Lab 3](lab3-ai-driven-resilience/) | AI-Driven Resilience Improvement | ~30 min | Use AI to analyze chaos findings, implement quick wins (replicas + PDB), and validate with before/after experiments |
 
 Each lab follows the same structure:
 
