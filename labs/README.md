@@ -188,6 +188,8 @@ kubectl get svc frontend -n oranje-markt
 
 > **Note:** Use `http://`, not `https://` — there is no TLS configured.
 
+> **Important:** Each `kubectl port-forward` command is a **blocking process** that runs in the foreground — it occupies the terminal until you stop it (`Ctrl+C`). To port-forward multiple services simultaneously, you need to **open a separate terminal for each one**. For example, if you want Grafana and Prometheus available at the same time, run each command in its own terminal window/tab.
+
 You're ready — start with **Lab 1!**
 
 ## Tips
