@@ -84,7 +84,7 @@ resource aksCluster 'Microsoft.ContainerService/managedClusters@2024-06-02-previ
         mode: 'System'
         vnetSubnetID: subnetId
         enableAutoScaling: true
-        minCount: 1
+        minCount: 2
         maxCount: 5
       }
     ]
