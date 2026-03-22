@@ -38,31 +38,35 @@ Start with the lab `README.md` and attempt the challenges on your own. If you ge
 
 ## Application Architecture
 
-┌──────────────────────────────────────────────────────────────────────────┐
-│                                                                          │
-│                                                                          │
-│  ┌──────────────┐     HTTP      ┌──────────────┐                        │
-│  │   Frontend   │◄────────────► │   Backend    │                        │
-│  │   (Next.js)  │               │  (Express)   │                        │
-│  │   :3000      │               │   :4000      │                        │
-│  └──────┬───────┘               └──────┬───────┘                        │
-│         ▲                              │                                 │
-│         │                             ▼                                 │
-│         │                       ┌──────────────┐                        │
-│  ┌──────┴───────┐               │  PostgreSQL  │                        │
-│  │   Browser    │               │   :5432      │                        │
-│  │  (end user)  │               └──────┬───────┘                        │
-│  └──────────────┘                      │                                 │
-│                                        │                                 │
-│  ┌──────────────────────────────────────┴─────────────────────────────┐  │
-│  │                       Observability                                │  │
-│  │  Prometheus (:9090) ◄── Backend :4000/api/metrics                  │  │
-│  │                     ◄── Frontend :3000/api/metrics                  │  │
-│  │                     ◄── Postgres-Exporter :9187/metrics             │  │
-│  │  Grafana (:3001)    ◄── 4 dashboards (App, DB, Frontend, Infra)    │  │
-│  │  Loki (:3100)       ◄── Promtail (container log collector)         │  │
-│  └────────────────────────────────────────────────────────────────────┘  │
-└──────────────────────────────────────────────────────────────────────────┘
+```
+┌──────────────────────────────────────────────────────────────────────────────┐
+│  AKS Cluster · Namespace: oranje-markt                                       │
+│                                                                              │
+│                              ┌──────────────┐                                │
+│  ┌──────────────┐  internal  │   Backend    │     ┌──────────────┐           │
+│  │   Frontend   │───────────►│  (Express)   │────►│  PostgreSQL  │           │
+│  │   (Next.js)  │  HTTP      │   :4000      │     │   :5432      │           │
+│  │   :3000      │◄───────────│  ClusterIP   │     │  StatefulSet │           │
+│  └──────┬───────┘            └──────────────┘     └──────────────┘           │
+│         │ LoadBalancer :80                                                    │
+│         │ (only public IP)                                                   │
+└─────────┼────────────────────────────────────────────────────────────────────┘
+          │
+          ▼
+   ┌──────────────┐
+   │   Browser    │   All traffic goes through the frontend.
+   │  (end user)  │   The browser never talks to the backend directly.
+   └──────────────┘
+```
+
+### Traffic Flow
+
+The frontend is a **Next.js** app that acts as both the UI and a reverse proxy:
+
+1. **Server-side rendering (SSR):** When a page loads, the frontend pod fetches data from the backend internally via `http://backend:4000` (Kubernetes DNS) and returns a fully rendered HTML page.
+2. **Client-side API calls:** Browser requests to `/api/*` hit the frontend pod, which proxies them to the backend internally. The browser never contacts the backend directly.
+
+This means **only the frontend needs a public IP**. The backend and database are `ClusterIP` services, accessible only within the cluster.
 
 ## Containers & Tech Stack
 
@@ -168,7 +172,7 @@ kubectl get svc -n oranje-markt
 
 ## Accessing the Application
 
-The **frontend** is the only service with a public LoadBalancer IP. All other services are `ClusterIP` and accessed via `kubectl port-forward`:
+The **frontend** is the only service with a public LoadBalancer IP. The browser connects to the frontend, which proxies all `/api/*` requests to the backend internally. All other services are `ClusterIP` and accessed via `kubectl port-forward`:
 
 ```bash
 # Get the frontend external IP
@@ -178,9 +182,11 @@ kubectl get svc frontend -n oranje-markt
 | Service | How to Access | Notes |
 |---------|--------------|-------|
 | **Frontend** | `http://<FRONTEND_EXTERNAL_IP>` | LoadBalancer on port 80 — browse products, add to cart, checkout |
-| **Backend API** | `kubectl port-forward svc/backend -n oranje-markt 4000:4000` → `http://localhost:4000` | Try `http://localhost:4000/api/health` for health check |
+| **Backend API** | `kubectl port-forward svc/backend -n oranje-markt 4000:4000` → `http://localhost:4000` | Direct access for debugging; try `/api/health` |
 | **Grafana** | `kubectl port-forward svc/grafana -n oranje-markt 3001:3001` → `http://localhost:3001` | Dashboards for App, DB, Frontend, and Infra metrics (login: `admin`/`admin`) |
 | **Prometheus** | `kubectl port-forward svc/prometheus -n oranje-markt 9090:9090` → `http://localhost:9090` | Query metrics directly |
+
+> **Note:** Use `http://`, not `https://` — there is no TLS configured.
 
 You're ready — start with **Lab 1!**
 
