@@ -61,7 +61,7 @@ This lab follows the structured chaos engineering process:
 > **🤖 Where to run Copilot prompts:** Use any of these tools depending on the task:
 > - **VS Code Copilot Chat** (sidebar) — best for longer prompts, pasting YAML context, and analysis
 > - **VS Code Agent Mode** (terminal integration) — best for autonomous execution (Extra Challenge)
-> - **Copilot CLI** (`gh copilot suggest` / `gh copilot explain`) — best for quick command-line questions
+> - **Copilot CLI**  — best for quick command-line questions
 
 ## Reference Documentation
 
@@ -298,7 +298,6 @@ This lab follows the structured chaos engineering process:
 - Run `kubectl get pods -n oranje-markt -w` in a separate terminal to watch pod lifecycle
 - Keep Grafana open on the relevant dashboard
 - Time the disruption — note when you injected and when recovery completed
-- If the script needs fixes, use `gh copilot explain` to understand what each command does
 
 > **⚠️ Cascading Failure:** When postgres is down, the backend health endpoint returns 503. Since the **liveness probe** uses this same endpoint, Kubernetes will restart the backend pod after 3 consecutive failures (~30s). This is a cascading failure worth documenting — it extends the total outage beyond the database recovery time alone.
 

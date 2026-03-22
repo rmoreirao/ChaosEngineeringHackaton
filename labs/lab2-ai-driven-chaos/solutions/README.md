@@ -6,7 +6,7 @@
 > **Database:** PostgreSQL StatefulSet `postgres`, pod `postgres-0`, PVC `postgres-data`
 > **Cluster:** Standard_D2s_v3 nodes (2 vCPU, 8 GiB each) — node count may vary by team
 > **Observability:** Prometheus, Grafana (port 3001), Loki — all in-cluster
-> **AI Tools:** GitHub Copilot (VS Code), GitHub Copilot CLI (`gh copilot suggest`, `gh copilot explain`)
+> **AI Tools:** GitHub Copilot (VS Code), GitHub Copilot CLI 
 
 ### Known Weaknesses
 

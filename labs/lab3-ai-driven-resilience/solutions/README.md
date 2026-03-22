@@ -33,7 +33,6 @@ Everything the AI needs is in the repository — no need to export YAMLs from th
 |------|---------------------------|
 | **VS Code Copilot Chat** | Open the repo folder, use **Agent Mode** — Copilot automatically sees your workspace |
 | **Copilot CLI** | `cd` into the repo folder — it reads files on demand |
-| **VS Code Chat (manual)** | Reference files with `#file:infra/k8s/backend/deployment.yaml` |
 
 Key paths for context:
 - **Kubernetes manifests:** `infra/k8s/` (backend, frontend, postgres deployments, services, observability stack)
