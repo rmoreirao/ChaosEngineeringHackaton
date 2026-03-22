@@ -252,23 +252,32 @@ For the hackathon, each team gets a fully independent environment. Use the autom
 
 ### Configuration
 
-Edit `teams.json` to define teams and shared defaults:
+Edit `teams.json` to define teams, users, and shared defaults:
 
 ```json
 {
   "teams": [
-    { "name": "team-alpha" },
-    { "name": "team-bravo" },
-    { "name": "team-charlie" }
+    {
+      "name": "team-alpha",
+      "users": ["alice@contoso.com", "bob@contoso.com"]
+    },
+    {
+      "name": "team-bravo",
+      "users": ["carol@contoso.com"]
+    }
   ],
   "defaults": {
     "location": "germanywestcentral",
     "kubernetesVersion": "1.34",
     "systemNodeVmSize": "Standard_D2s_v3",
-    "systemNodeCount": 3
+    "systemNodeCount": 2
   }
 }
 ```
+
+Each team entry supports:
+- **`name`** (required) — used to generate resource names
+- **`users`** (optional) — list of Entra ID user emails for RBAC assignment
 
 Each team name generates isolated Azure resources:
 
@@ -295,6 +304,26 @@ Deploy a single team:
 
 The script outputs a summary table with each team's frontend URL and saves it to `deployment-summary.json`.
 
+### Assign RBAC for team members
+
+After deployment, grant team members access to their AKS cluster and ACR:
+
+```powershell
+# Assign roles for all teams (reads users from teams.json)
+.\assign-rbac.ps1
+
+# Assign for a specific team only
+.\assign-rbac.ps1 -TeamName "team-alpha"
+```
+
+This assigns:
+- **Azure Kubernetes Service RBAC Cluster Admin** on the team's AKS cluster (enables `kubectl` access)
+- **AcrPull** on the team's ACR (enables image inspection)
+
+Role assignments are idempotent — re-running is safe. Teams without a `users` array are skipped.
+
+> **Note:** After RBAC is assigned, users authenticate with `az aks get-credentials` (without `--admin`). The `--admin` flag used by `deploy-teams.ps1` bypasses Azure RBAC entirely.
+
 ### Tear down all teams
 
 ```powershell
@@ -310,6 +339,7 @@ infra/azure/
 ├── README.md              ← this file
 ├── teams.json             ← team definitions for multi-team deploy
 ├── deploy-teams.ps1       ← deploy all teams (PowerShell)
+├── assign-rbac.ps1        ← assign AKS + ACR roles per team (PowerShell)
 ├── teardown-teams.ps1     ← tear down all teams (PowerShell)
 ├── main.bicep             ← orchestrator (subscription-level deployment)
 ├── main.bicepparam        ← parameter values (single-team reference)

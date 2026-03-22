@@ -1,7 +1,13 @@
 {
   "teams": [
-    { "name": "kad-chaos-team1" },
-    { "name": "kad-chaos-team2" }
+    {
+      "name": "kad-chaos-team1",
+      "users": []
+    },
+    {
+      "name": "kad-chaos-team2",
+      "users": []
+    }
   ],
   "defaults": {
     "location": "germanywestcentral",
