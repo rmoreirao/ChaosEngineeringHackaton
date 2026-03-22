@@ -124,6 +124,7 @@ foreach ($team in $teams) {
 
     $backendImage = "$acrLoginServer/oranje-markt-backend:latest"
     $frontendImage = "$acrLoginServer/oranje-markt-frontend:latest"
+    $trafficGenImage = "$acrLoginServer/oranje-markt-traffic-generator:latest"
 
     Write-Host "  Building backend (local)..."
     docker build -t $backendImage "$RepoRoot\backend"
@@ -150,6 +151,20 @@ foreach ($team in $teams) {
     docker push $frontendImage
     if ($LASTEXITCODE -ne 0) {
         Write-Error "Frontend image push failed for $name"
+        continue
+    }
+
+    Write-Host "  Building traffic-generator (local)..."
+    docker build -t $trafficGenImage "$RepoRoot\tests"
+    if ($LASTEXITCODE -ne 0) {
+        Write-Error "Traffic-generator image build failed for $name"
+        continue
+    }
+
+    Write-Host "  Pushing traffic-generator..."
+    docker push $trafficGenImage
+    if ($LASTEXITCODE -ne 0) {
+        Write-Error "Traffic-generator image push failed for $name"
         continue
     }
     Write-Host "  Images built and pushed." -ForegroundColor DarkGreen
@@ -192,6 +207,7 @@ foreach ($team in $teams) {
 
     kubectl apply -f "$tempDir\backend\"
     kubectl apply -f "$tempDir\frontend\"
+    kubectl apply -f "$tempDir\traffic-generator\"
 
     # Deploy observability stack
     $obsDir = "$tempDir\observability"

@@ -8,6 +8,6 @@ metadata:
 data:
   SCENARIOS: "browse,search,register,checkout,unauth"
   USERS: "3"
-  DURATION: "30"
+  DURATION: "60"
   BASE_URL: "http://frontend:80"
   SLEEP_BETWEEN_RUNS: "30"

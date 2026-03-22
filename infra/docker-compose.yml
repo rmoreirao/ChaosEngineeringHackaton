@@ -35,7 +35,7 @@ services:
     labels:
       - "promtail=true"
 
-  app:
+  frontend:
     build:
       context: ../frontend
       dockerfile: Dockerfile
@@ -65,7 +65,7 @@ services:
       - '--web.console.templates=/etc/prometheus/consoles'
 
   grafana:
-    image: grafana/grafana:latest
+    image: grafana/grafana:11.6.0
     container_name: oranje-grafana
     ports:
       - "3001:3000"
@@ -122,10 +122,10 @@ services:
       SCENARIOS: "browse,search,register,checkout,unauth"
       USERS: "3"
       DURATION: "30"
-      BASE_URL: "http://app:3000"
+      BASE_URL: "http://frontend:3000"
       SLEEP_BETWEEN_RUNS: "30"
     depends_on:
-      - app
+      - frontend
       - backend
     restart: unless-stopped
     labels:

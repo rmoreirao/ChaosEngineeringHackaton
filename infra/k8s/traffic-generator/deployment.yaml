@@ -17,8 +17,8 @@ spec:
     spec:
       containers:
         - name: traffic-generator
-          image: oranje-markt-traffic-generator:local
-          imagePullPolicy: IfNotPresent
+          image: kadchaosteam3acr.azurecr.io/oranje-markt-traffic-generator:latest
+          imagePullPolicy: Always
           envFrom:
             - configMapRef:
                 name: traffic-generator-config
