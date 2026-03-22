@@ -1,13 +1,7 @@
 {
   "teams": [
     {
-      "name": "kad-chaos-team1",
-      "users": [
-        "admin@MngEnvMCAP455753.onmicrosoft.com"
-      ]
-    },
-    {
-      "name": "kad-chaos-team2",
+      "name": "kad-chaos-team3",
       "users": [
         "admin@MngEnvMCAP455753.onmicrosoft.com"
       ]
