@@ -169,7 +169,7 @@ foreach ($team in $teams) {
     }
     Write-Host "  Images built and pushed." -ForegroundColor DarkGreen
 
-    # --- Step 4: Get AKS credentials ---
+    # --- Step 4: Get AKS credentials + grant cluster-admin RBAC to current user ---
     Write-Host "`n[4/6] Getting AKS credentials..." -ForegroundColor Green
     az aks get-credentials `
         --resource-group $rgName `
@@ -179,6 +179,27 @@ foreach ($team in $teams) {
         --output none
 
     Write-Host "  Credentials configured." -ForegroundColor DarkGreen
+
+    # Grant the signed-in user "Azure Kubernetes Service RBAC Cluster Admin" so
+    # kubectl works without --admin (required when Azure RBAC for K8s is enabled).
+    Write-Host "  Granting AKS RBAC Cluster Admin to current user..."
+    $aksId = az aks show --resource-group $rgName --name "$name-aks" --query id --output tsv
+    $currentUserId = az ad signed-in-user show --query id --output tsv
+    if ($aksId -and $currentUserId) {
+        az role assignment create `
+            --assignee-object-id $currentUserId `
+            --assignee-principal-type User `
+            --role "Azure Kubernetes Service RBAC Cluster Admin" `
+            --scope $aksId `
+            --output none 2>$null
+        if ($LASTEXITCODE -eq 0) {
+            Write-Host "  RBAC role assigned." -ForegroundColor DarkGreen
+        } else {
+            Write-Warning "  RBAC assignment may already exist or failed — continuing"
+        }
+    } else {
+        Write-Warning "  Could not resolve AKS id or current user id — skipping RBAC assignment"
+    }
 
     # --- Step 5: Deploy K8s manifests ---
     Write-Host "`n[5/6] Deploying Kubernetes manifests..." -ForegroundColor Green
