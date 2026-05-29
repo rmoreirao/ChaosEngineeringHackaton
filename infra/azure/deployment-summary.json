@@ -1,16 +1,8 @@
-[
-  {
-    "Team": "kad-chaos-team5",
-    "ResourceGroup": "rg-kad-chaos-team5",
-    "AKS": "kad-chaos-team5-aks",
-    "ACR": "kadchaosteam5acr",
-    "FrontendURL": "http://(pending)"
-  },
-  {
-    "Team": "kad-chaos-team6",
-    "ResourceGroup": "rg-kad-chaos-team6",
-    "AKS": "kad-chaos-team6-aks",
-    "ACR": "kadchaosteam6acr",
-    "FrontendURL": "http://(pending)"
-  }
-]
+{
+  "Team": "hackathon-chaosengineeringorchestratoralpha",
+  "ResourceGroup": "rg-hackathon-chaosengineeringorchestratoralpha",
+  "ResourcesSuffix": "chaosalpha",
+  "AKS": "chaosalpha-aks",
+  "ACR": "chaosalphaacr",
+  "FrontendURL": "http://20.170.97.10"
+}

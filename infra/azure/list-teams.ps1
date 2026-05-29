@@ -53,8 +53,9 @@ $results = @()
 
 foreach ($team in $teams) {
     $name = $team.name
-    $rgName = "rg-$name"
-    $aksName = "$name-aks"
+    $rgName = if ($team.PSObject.Properties['rgName'] -and $team.rgName) { $team.rgName } else { "rg-$name" }
+    $resourcesSuffix = if ($team.PSObject.Properties['resourcesSuffix'] -and $team.resourcesSuffix) { $team.resourcesSuffix } else { ($name -replace '-', '') }
+    $aksName = "$resourcesSuffix-aks"
 
     # Check if resource group exists
     $rgExists = az group exists --name $rgName 2>$null

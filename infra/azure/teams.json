@@ -1,20 +1,22 @@
 {
   "teams": [
     {
-      "name": "hackathon-chaosengineeringorchestratoralpha",
-      "rgName": "rg-hackathon-chaosengineeringorchestratoralpha",
-      "resourcesSuffix": "chaosalpha",
+      "name": "kad-chaos-team5",
       "users": [
-        "rmoreirao@microsoft.com",
-        "Adriaan.Knapen@ah.nl",
-        "Silvija.Klincharska@ah.nl"
+        "admin@MngEnvMCAP455753.onmicrosoft.com"
+      ]
+    },
+    {
+      "name": "kad-chaos-team6",
+      "users": [
+        "admin@MngEnvMCAP455753.onmicrosoft.com"
       ]
     }
   ],
   "defaults": {
     "location": "germanywestcentral",
     "kubernetesVersion": "1.34",
-    "systemNodeVmSize": "Standard_D4s_v5",
+    "systemNodeVmSize": "Standard_D2s_v3",
     "systemNodeCount": 2
   }
 }

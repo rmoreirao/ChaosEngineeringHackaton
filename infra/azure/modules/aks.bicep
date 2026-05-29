@@ -49,6 +49,10 @@ param dnsServiceIP string = '172.16.0.10'
 @description('Tags to apply to the AKS cluster')
 param tags object = {}
 
+@description('Name of the auto-managed node resource group (holds VMSS, NICs, LBs, disks). Azure default is "MC_<rgName>_<clusterName>_<region>" which can exceed the 80-char limit when names/regions are long. We set it explicitly to a short, deterministic value.')
+@maxLength(80)
+param nodeResourceGroupName string = 'MC-${clusterName}'
+
 // ---------- Resources ----------
 
 // AKS Managed Cluster - the core Kubernetes control plane and node pool
@@ -63,6 +67,7 @@ resource aksCluster 'Microsoft.ContainerService/managedClusters@2024-06-02-previ
     }
   }
   properties: {
+    nodeResourceGroup: nodeResourceGroupName
     dnsPrefix: dnsPrefix
     kubernetesVersion: kubernetesVersion
 

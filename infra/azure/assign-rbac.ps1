@@ -57,13 +57,15 @@ $results = @()
 
 foreach ($team in $teams) {
     $name = $team.name
-    $rgName = "rg-$name"
-    $aksName = "$name-aks"
-    $acrName = ($name -replace '-', '') + "acr"
+    $rgName = if ($team.PSObject.Properties['rgName'] -and $team.rgName) { $team.rgName } else { "rg-$name" }
+    $resourcesSuffix = if ($team.PSObject.Properties['resourcesSuffix'] -and $team.resourcesSuffix) { $team.resourcesSuffix } else { ($name -replace '-', '') }
+    $aksName = "$resourcesSuffix-aks"
+    $acrName = ($resourcesSuffix -replace '-', '') + "acr"
 
     Write-Host ""
     Write-Host "========================================" -ForegroundColor Yellow
     Write-Host " Team: $name" -ForegroundColor Yellow
+    Write-Host " RG: $rgName | AKS: $aksName | ACR: $acrName" -ForegroundColor Yellow
     Write-Host "========================================" -ForegroundColor Yellow
 
     # Check if team has users defined

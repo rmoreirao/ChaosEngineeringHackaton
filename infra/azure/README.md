@@ -259,10 +259,14 @@ Edit `teams.json` to define teams, users, and shared defaults:
   "teams": [
     {
       "name": "team-alpha",
+      "rgName": "rg-team-alpha",
+      "resourcesSuffix": "alpha",
       "users": ["alice@contoso.com", "bob@contoso.com"]
     },
     {
       "name": "team-bravo",
+      "rgName": "rg-team-bravo",
+      "resourcesSuffix": "bravo",
       "users": ["carol@contoso.com"]
     }
   ],
@@ -276,18 +280,21 @@ Edit `teams.json` to define teams, users, and shared defaults:
 ```
 
 Each team entry supports:
-- **`name`** (required) — used to generate resource names
+- **`name`** (required) — human-readable display name (used in logs/summary only)
+- **`rgName`** (required) — Azure Resource Group name. The RG must already exist (or you must have subscription-level rights to create it).
+- **`resourcesSuffix`** (required) — short, alphanumeric suffix (≤ ~20 chars) that drives all Azure resource names. Keep it short to stay within AKS (node-RG 80-char) and ACR (50-char) limits.
 - **`users`** (optional) — list of Entra ID user emails for RBAC assignment
 
-Each team name generates isolated Azure resources:
+Resource names are derived from `resourcesSuffix` (not `name`):
 
-| Resource | Naming Pattern | Example (`team-alpha`) |
-|----------|---------------|------------------------|
-| Resource Group | `rg-{name}` | `rg-team-alpha` |
-| AKS Cluster | `{name}-aks` | `team-alpha-aks` |
-| ACR | `{name}acr` (no hyphens) | `teamalphaacr` |
-| VNet | `{name}-vnet` | `team-alpha-vnet` |
-| Managed Identity | `{name}-aks-identity` | `team-alpha-aks-identity` |
+| Resource          | Naming Pattern                 | Example (`resourcesSuffix: "alpha"`) |
+|-------------------|--------------------------------|--------------------------------------|
+| Resource Group    | `rgName` (verbatim)            | `rg-team-alpha`                      |
+| AKS Cluster       | `{suffix}-aks`                 | `alpha-aks`                          |
+| AKS Node RG       | `MC-{suffix}-aks`              | `MC-alpha-aks`                       |
+| ACR               | `{suffix}acr` (no hyphens)     | `alphaacr`                           |
+| VNet              | `{suffix}-vnet`                | `alpha-vnet`                         |
+| Managed Identity  | `{suffix}-aks-identity`        | `alpha-aks-identity`                 |
 
 ### Deploy all teams
 

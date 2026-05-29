@@ -46,7 +46,9 @@ if ($TeamName) {
     }
 }
 
-$rgNames = $teams | ForEach-Object { "rg-$($_.name)" }
+$rgNames = $teams | ForEach-Object {
+    if ($_.PSObject.Properties['rgName'] -and $_.rgName) { $_.rgName } else { "rg-$($_.name)" }
+}
 
 Write-Host "============================================" -ForegroundColor Red
 Write-Host " Chaos Engineering Hackathon - TEARDOWN" -ForegroundColor Red
@@ -67,7 +69,9 @@ if (-not $Force) {
 Write-Host ""
 
 foreach ($team in $teams) {
-    $rgName = "rg-$($team.name)"
+    $rgName = if ($team.PSObject.Properties['rgName'] -and $team.rgName) { $team.rgName } else { "rg-$($team.name)" }
+    $resourcesSuffix = if ($team.PSObject.Properties['resourcesSuffix'] -and $team.resourcesSuffix) { $team.resourcesSuffix } else { ($team.name -replace '-', '') }
+    $aksName = "$resourcesSuffix-aks"
 
     Write-Host "Deleting $rgName..." -ForegroundColor Red -NoNewline
 
@@ -82,8 +86,8 @@ foreach ($team in $teams) {
     Write-Host " deletion started (async)" -ForegroundColor DarkGray
 
     # Remove kubectl context if it exists
-    kubectl config delete-context "$($team.name)-aks-admin" 2>$null | Out-Null
-    kubectl config delete-cluster "$($team.name)-aks" 2>$null | Out-Null
+    kubectl config delete-context "$aksName-admin" 2>$null | Out-Null
+    kubectl config delete-cluster $aksName 2>$null | Out-Null
 }
 
 Write-Host ""

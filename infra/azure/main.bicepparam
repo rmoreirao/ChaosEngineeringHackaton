@@ -1,9 +1,13 @@
 using 'main.bicep'
 
 // ---------- General ----------
+// Note: this template now deploys at resourceGroup scope, so the resource
+// group must already exist. Pass --resource-group <name> to `az deployment
+// group create`. The `location` defaults to the RG's location if omitted.
+// `namePrefix` should match the team's `resourcesSuffix` in teams.json
+// (short, alphanumeric, <= ~20 chars).
 param location = 'germanywestcentral'
-param resourceGroupName = 'rg-devai-hackathon'
-param namePrefix = 'devai-hackathon'
+param namePrefix = 'devaihack'
 
 // ---------- Networking ----------
 param vnetAddressPrefix = '10.0.0.0/16'

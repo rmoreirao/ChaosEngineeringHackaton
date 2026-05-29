@@ -1,20 +1,22 @@
 // ============================================================================
-// Main Bicep template - Subscription-level deployment
-// Deploys: Resource Group, Virtual Network, Managed Identity, AKS Cluster, ACR
+// Main Bicep template - Resource Group-level deployment
+// Deploys into an EXISTING resource group:
+//   Virtual Network, Managed Identity, AKS Cluster, ACR
+// The resource group must be created out-of-band (e.g., by a subscription
+// owner) because this template runs at resourceGroup scope so it can be used
+// by principals that only have Contributor rights on the RG (not the
+// subscription).
 // Region: Germany West Central (Frankfurt)
 // ============================================================================
 
-targetScope = 'subscription'
+targetScope = 'resourceGroup'
 
 // ---------- General Parameters ----------
 
-@description('Azure region for all resources (default: Germany West Central / Frankfurt)')
-param location string = 'germanywestcentral'
+@description('Azure region for all resources (default: resource group location)')
+param location string = resourceGroup().location
 
-@description('Name of the resource group to create')
-param resourceGroupName string
-
-@description('Name prefix used to generate unique resource names across modules')
+@description('Short name prefix (corresponds to a team\'s `resourcesSuffix` in teams.json) used to generate unique resource names across modules. Keep <= ~20 alphanumeric chars to stay within AKS node-resource-group (80 chars) and ACR (50 chars) name limits.')
 param namePrefix string
 
 @description('Tags applied to all resources for cost tracking and organization')
@@ -61,22 +63,12 @@ param systemNodeVmSize string = 'Standard_D2s_v3'
 @maxValue(50)
 param systemNodeCount int = 3
 
-// ---------- Resource Group ----------
-// Creates the resource group that will contain all deployed resources.
-
-resource rg 'Microsoft.Resources/resourceGroups@2024-03-01' = {
-  name: resourceGroupName
-  location: location
-  tags: tags
-}
-
 // ---------- Module: Networking ----------
 // Deploys a Virtual Network with a dedicated AKS subnet.
 // The VNet provides network isolation and the subnet is used by AKS node pools.
 
 module network 'modules/network.bicep' = {
   name: 'network-deployment'
-  scope: rg
   params: {
     location: location
     namePrefix: namePrefix
@@ -94,7 +86,6 @@ module network 'modules/network.bicep' = {
 
 module identity 'modules/identity.bicep' = {
   name: 'identity-deployment'
-  scope: rg
   params: {
     location: location
     namePrefix: namePrefix
@@ -107,7 +98,6 @@ module identity 'modules/identity.bicep' = {
 
 module acr 'modules/acr.bicep' = {
   name: 'acr-deployment'
-  scope: rg
   params: {
     location: location
     namePrefix: namePrefix
@@ -121,7 +111,6 @@ module acr 'modules/acr.bicep' = {
 
 module aks 'modules/aks.bicep' = {
   name: 'aks-deployment'
-  scope: rg
   params: {
     location: location
     clusterName: '${namePrefix}-aks'
@@ -154,8 +143,8 @@ output vnetName string = network.outputs.vnetName
 @description('Client ID of the managed identity assigned to AKS')
 output identityClientId string = identity.outputs.clientId
 
-@description('Name of the created resource group')
-output resourceGroupName string = rg.name
+@description('Name of the resource group this deployment targets')
+output resourceGroupName string = resourceGroup().name
 
 @description('ACR login server URL')
 output acrLoginServer string = acr.outputs.loginServer

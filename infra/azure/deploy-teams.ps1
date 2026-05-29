@@ -58,28 +58,62 @@ $results = @()
 
 foreach ($team in $teams) {
     $name = $team.name
-    $rgName = "rg-$name"
-    $acrName = ($name -replace '-', '') + "acr"
+
+    # Per-team naming. `rgName` and `resourcesSuffix` are required fields in
+    # teams.json. `resourcesSuffix` must be short (<= ~20 chars, alphanumeric
+    # preferred) because it drives AKS/ACR/identity names — long suffixes
+    # break the AKS node-resource-group 80-char limit and the 50-char ACR
+    # name limit. Fall back to legacy derivation when absent for back-compat.
+    $rgName = if ($team.PSObject.Properties['rgName'] -and $team.rgName) { $team.rgName } else { "rg-$name" }
+    $resourcesSuffix = if ($team.PSObject.Properties['resourcesSuffix'] -and $team.resourcesSuffix) { $team.resourcesSuffix } else { ($name -replace '-', '') }
+
+    if ($resourcesSuffix.Length -gt 20 -or $resourcesSuffix -notmatch '^[a-zA-Z0-9]+$') {
+        Write-Warning "resourcesSuffix '$resourcesSuffix' for team '$name' is longer than 20 chars or contains non-alphanumeric characters — AKS/ACR name limits may be exceeded."
+    }
+
+    # Derived resource names (must match what main.bicep / modules produce):
+    #   ACR    : "${resourcesSuffix}acr"            (modules/acr.bicep strips '-')
+    #   AKS    : "${resourcesSuffix}-aks"           (main.bicep clusterName)
+    #   Deploy : "deploy-${resourcesSuffix}"
+    $acrName = ($resourcesSuffix -replace '-', '') + "acr"
+    $aksName = "$resourcesSuffix-aks"
+    $deploymentName = "deploy-$resourcesSuffix"
 
     Write-Host ""
     Write-Host "========================================" -ForegroundColor Yellow
     Write-Host " Deploying: $name" -ForegroundColor Yellow
-    Write-Host " RG: $rgName | ACR: $acrName" -ForegroundColor Yellow
+    Write-Host " RG: $rgName | Suffix: $resourcesSuffix | AKS: $aksName | ACR: $acrName" -ForegroundColor Yellow
     Write-Host "========================================" -ForegroundColor Yellow
 
     # --- Step 1: Deploy Bicep infrastructure ---
     Write-Host "`n[1/6] Deploying Azure infrastructure (Bicep)..." -ForegroundColor Green
-    az deployment sub create `
-        --location $defaults.location `
+
+    # Ensure the resource group exists. We deploy at resourceGroup scope so
+    # the signed-in user only needs Contributor on the RG (not the
+    # subscription). If the RG is missing we try to create it, but that will
+    # only succeed when the caller has subscription-level permissions.
+    $rgExists = az group exists --name $rgName --output tsv
+    if ($rgExists -ne "true") {
+        Write-Host "  Resource group '$rgName' not found — attempting to create it..."
+        az group create --name $rgName --location $defaults.location --output none
+        if ($LASTEXITCODE -ne 0) {
+            Write-Error "Failed to create resource group '$rgName'. If you only have RG-scoped access, ask a subscription owner to pre-create it, then re-run this script."
+            continue
+        }
+    } else {
+        Write-Host "  Using existing resource group '$rgName'."
+    }
+
+    az deployment group create `
+        --resource-group $rgName `
         --template-file $BicepFile `
         --parameters `
             location=$($defaults.location) `
-            resourceGroupName=$rgName `
-            namePrefix=$name `
+            namePrefix=$resourcesSuffix `
             kubernetesVersion=$($defaults.kubernetesVersion) `
             systemNodeVmSize=$($defaults.systemNodeVmSize) `
             systemNodeCount=$($defaults.systemNodeCount) `
-        --name "deploy-$name" `
+        --name $deploymentName `
         --output none
 
     if ($LASTEXITCODE -ne 0) {
@@ -92,7 +126,7 @@ foreach ($team in $teams) {
     Write-Host "`n[2/6] Attaching ACR to AKS..." -ForegroundColor Green
     az aks update `
         --resource-group $rgName `
-        --name "$name-aks" `
+        --name $aksName `
         --attach-acr $acrName `
         --output none
 
@@ -173,7 +207,7 @@ foreach ($team in $teams) {
     Write-Host "`n[4/6] Getting AKS credentials..." -ForegroundColor Green
     az aks get-credentials `
         --resource-group $rgName `
-        --name "$name-aks" `
+        --name $aksName `
         --overwrite-existing `
         --admin `
         --output none
@@ -183,7 +217,7 @@ foreach ($team in $teams) {
     # Grant the signed-in user "Azure Kubernetes Service RBAC Cluster Admin" so
     # kubectl works without --admin (required when Azure RBAC for K8s is enabled).
     Write-Host "  Granting AKS RBAC Cluster Admin to current user..."
-    $aksId = az aks show --resource-group $rgName --name "$name-aks" --query id --output tsv
+    $aksId = az aks show --resource-group $rgName --name $aksName --query id --output tsv
     $currentUserId = az ad signed-in-user show --query id --output tsv
     if ($aksId -and $currentUserId) {
         az role assignment create `
@@ -207,7 +241,7 @@ foreach ($team in $teams) {
     # $acrLoginServer already set in Step 3
 
     # Create a temp directory for patched manifests
-    $tempDir = New-Item -ItemType Directory -Path "$env:TEMP\k8s-$name" -Force
+    $tempDir = New-Item -ItemType Directory -Path "$env:TEMP\k8s-$resourcesSuffix" -Force
 
     # Copy all K8s manifests to temp dir
     Copy-Item -Path "$K8sDir\*" -Destination $tempDir -Recurse -Force
@@ -264,7 +298,8 @@ foreach ($team in $teams) {
     $results += [PSCustomObject]@{
         Team = $name
         ResourceGroup = $rgName
-        AKS = "$name-aks"
+        ResourcesSuffix = $resourcesSuffix
+        AKS = $aksName
         ACR = $acrName
         FrontendURL = "http://$ip"
     }
