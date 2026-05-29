@@ -142,7 +142,7 @@ Resource Group: rg-{team-name}  ·  Location: germanywestcentral
 
 ```bash
 # 1. Login to Azure
-az login
+az login --tenant <your-tenant-id>
 
 # 2. Set your subscription (if you have multiple)
 az account set --subscription "<your-subscription-id>"

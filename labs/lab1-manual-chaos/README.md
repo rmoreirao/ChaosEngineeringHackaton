@@ -239,7 +239,7 @@ kubectl get svc frontend -n oranje-markt    # Get frontend external IP
 
   **Bash:**
   ```bash
-  for i in $(seq 2 5); do
+  for i in $(seq 2 15); do
     kubectl run load-test-$i --image=busybox --restart=Never --labels=chaos=load-test -n oranje-markt \
       -- /bin/sh -c "while true; do wget -q -O- http://backend:4000/api/products; done"
   done
@@ -247,7 +247,7 @@ kubectl get svc frontend -n oranje-markt    # Get frontend external IP
 
   **PowerShell:**
   ```powershell
-  foreach ($i in 2..5) {
+  foreach ($i in 2..15) {
     kubectl run "load-test-$i" --image=busybox --restart=Never --labels=chaos=load-test -n oranje-markt `
       -- sh -c 'while true; do wget -q -O- http://backend:4000/api/products; done'
   }
