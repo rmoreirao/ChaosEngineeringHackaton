@@ -29,6 +29,42 @@ param tags object = {}
 
 // ---------- Resources ----------
 
+// Network Security Group for the AKS subnet.
+// Some Azure tenants enforce a policy that auto-attaches an NSG to every subnet.
+// When that auto-created NSG has no custom rules, the default DenyAllInBound
+// rule blocks Internet -> LoadBalancer traffic (NSGs at both subnet and NIC
+// levels must allow the packet, and AKS only manages the NIC-level NSG).
+// Declaring our own NSG with explicit Allow rules avoids that breakage.
+resource aksSubnetNsg 'Microsoft.Network/networkSecurityGroups@2024-01-01' = {
+  name: '${namePrefix}-aks-snet-nsg'
+  location: location
+  tags: tags
+  properties: {
+    securityRules: [
+      {
+        // Allow inbound HTTP/HTTPS from the Internet so Kubernetes LoadBalancer
+        // services (e.g., the frontend) are publicly reachable.
+        // With Standard LB + floating IP, the destination address on the packet
+        // arriving at the node NIC is the LB's public IP, so destination is '*'.
+        name: 'Allow-Internet-Http-Https'
+        properties: {
+          priority: 200
+          direction: 'Inbound'
+          access: 'Allow'
+          protocol: 'Tcp'
+          sourceAddressPrefix: 'Internet'
+          sourcePortRange: '*'
+          destinationAddressPrefix: '*'
+          destinationPortRanges: [
+            '80'
+            '443'
+          ]
+        }
+      }
+    ]
+  }
+}
+
 // Virtual Network - provides the network backbone for AKS and other services
 resource vnet 'Microsoft.Network/virtualNetworks@2024-01-01' = {
   name: '${namePrefix}-vnet'
@@ -47,6 +83,9 @@ resource vnet 'Microsoft.Network/virtualNetworks@2024-01-01' = {
         name: aksSubnetName
         properties: {
           addressPrefix: aksSubnetAddressPrefix
+          networkSecurityGroup: {
+            id: aksSubnetNsg.id
+          }
         }
       }
     ]
