@@ -161,12 +161,16 @@ kubectl get svc frontend -n oranje-markt    # Get frontend external IP
 
 **Requirements:**
 
-- Approach 1 — Wrong DNS: Edit the backend deployment to change the `DATABASE_URL` environment variable to point to a non-existent host
+- Approach — Wrong DNS: Edit the backend deployment to change the `DATABASE_URL` environment variable to point to a non-existent host
   ```bash
+   # Show the secret-backed value the running pod is actually using
+  kubectl exec -n oranje-markt deploy/backend -- printenv DATABASE_URL
+
+  # Change it to a wrong value (this will cause connection failures)
   kubectl set env deployment/backend -n oranje-markt DATABASE_URL="postgresql://oranje:oranje123@wrong-host:5432/oranjedb"
   ```
   > **Note:** The `DATABASE_URL` is normally sourced from a Kubernetes Secret (`postgres-secret`) via `valueFrom.secretKeyRef`. Using `kubectl set env` replaces the secret reference with a literal value. When you run `kubectl rollout undo`, it restores the original secret reference.
-- Approach 2 — Exec into pod: Use `kubectl exec` to simulate DNS failure inside the backend pod
+
 - Observe: does the backend crash or return errors gracefully?
 - Restore the original configuration after testing
 
