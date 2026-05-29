@@ -161,11 +161,8 @@ kubectl get svc frontend -n oranje-markt    # Get frontend external IP
 
 **Requirements:**
 
-- Approach — Wrong DNS: Edit the backend deployment to change the `DATABASE_URL` environment variable to point to a non-existent host
+- Approach 1 — Wrong DNS: Edit the backend deployment to change the `DATABASE_URL` environment variable to point to a non-existent host
   ```bash
-   # Show the secret-backed value the running pod is actually using
-  kubectl exec -n oranje-markt deploy/backend -- printenv DATABASE_URL
-
   # Change it to a wrong value (this will cause connection failures)
   kubectl set env deployment/backend -n oranje-markt DATABASE_URL="postgresql://oranje:oranje123@wrong-host:5432/oranjedb"
   ```
@@ -173,6 +170,8 @@ kubectl get svc frontend -n oranje-markt    # Get frontend external IP
 
 - Observe: does the backend crash or return errors gracefully?
 - Restore the original configuration after testing
+
+- Approach 2 — Actual disruption options - for ex.:  Break the Service selector or add a NetworkPolicy that blocks traffic from backend to database (requires additional setup)
 
 **What to observe:**
 
@@ -185,7 +184,7 @@ kubectl get svc frontend -n oranje-markt    # Get frontend external IP
 
 - Save the original DATABASE_URL before changing it
 - The backend's readiness probe hits `/api/health` — does it still pass when the DB is unreachable?
-- `kubectl rollout undo deployment/backend -n oranje-markt` can restore the previous config
+- `kubectl rollout undo deployment/backend -n oranje-markt` can restore the previous config.
 - Watch both the backend logs and the frontend behavior simultaneously
 
 > **Discussion:** How should an application handle database connectivity failures? (retries, circuit breakers, connection pooling)
