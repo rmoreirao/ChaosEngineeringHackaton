@@ -1,8 +1,8 @@
-# Chaos Engineering Workshop — Hands-on Labs
+# Chaos Engineering Workshop - Hands-on Labs
 
 ## Overview
 
-Three labs progressing from manual chaos to AI-driven experiments to resilience improvements. You'll break the **Oranje Markt** application running on AKS, observe what happens, and then fix it — all within ~3 hours.
+Three labs progressing from manual chaos to AI-driven experiments to resilience improvements. You'll break the **Oranje Markt** application running on AKS, observe what happens, and then fix it - all within ~3 hours.
 
 The system is intentionally fragile. Your job is to find out exactly how fragile.
 
@@ -80,7 +80,7 @@ This means **only the frontend needs a public IP**. The backend and database are
 | **Loki** | Grafana/Loki | Deployment | 1 | `:3100` | Log aggregation, TSDB schema |
 | **Promtail** | Grafana/Promtail | DaemonSet | 1 per node | `:9080` | Collects container logs from `/var/log/pods`, pushes to Loki |
 | **Postgres Exporter** | Prometheus Community | Deployment | 1 | `:9187` | Exposes PostgreSQL metrics for Prometheus |
-| **Traffic Generator** | Playwright (Node.js) | Deployment | 1 | — | Simulates user scenarios (browse, search, register, checkout) |
+| **Traffic Generator** | Playwright (Node.js) | Deployment | 1 | - | Simulates user scenarios (browse, search, register, checkout) |
 
 ## Azure Infrastructure
 
@@ -135,7 +135,7 @@ Resource Group: rg-{team-name}  ·  Location: germanywestcentral
 └──────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-> Each team gets a **fully isolated** set of resources (Resource Group, VNet, Managed Identity, ACR, and AKS cluster). PostgreSQL and the observability stack run **in-cluster** — no Azure PaaS equivalents are used, by design.
+> Each team gets a **fully isolated** set of resources (Resource Group, VNet, Managed Identity, ACR, and AKS cluster). PostgreSQL and the observability stack run **in-cluster** - no Azure PaaS equivalents are used, by design.
 
 
 ## Quick Start
@@ -177,16 +177,16 @@ kubectl get svc frontend -n oranje-markt
 
 | Service | How to Access | Notes |
 |---------|--------------|-------|
-| **Frontend** | `http://<FRONTEND_EXTERNAL_IP>` | LoadBalancer on port 80 — browse products, add to cart, checkout |
+| **Frontend** | `http://<FRONTEND_EXTERNAL_IP>` | LoadBalancer on port 80 - browse products, add to cart, checkout |
 | **Backend API** | `kubectl port-forward svc/backend -n oranje-markt 4000:4000` → `http://localhost:4000` | Direct access for debugging; try `/api/health` |
 | **Grafana** | `kubectl port-forward svc/grafana -n oranje-markt 3001:3001` → `http://localhost:3001` | Dashboards for App, DB, Frontend, and Infra metrics (login: `admin`/`admin`) |
 | **Prometheus** | `kubectl port-forward svc/prometheus -n oranje-markt 9090:9090` → `http://localhost:9090` | Query metrics directly |
 
-> **Note:** Use `http://`, not `https://` — there is no TLS configured.
+> **Note:** Use `http://`, not `https://` - there is no TLS configured.
 
-> **Important:** Each `kubectl port-forward` command is a **blocking process** that runs in the foreground — it occupies the terminal until you stop it (`Ctrl+C`). To port-forward multiple services simultaneously, you need to **open a separate terminal for each one**. For example, if you want Grafana and Prometheus available at the same time, run each command in its own terminal window/tab.
+> **Important:** Each `kubectl port-forward` command is a **blocking process** that runs in the foreground - it occupies the terminal until you stop it (`Ctrl+C`). To port-forward multiple services simultaneously, you need to **open a separate terminal for each one**. For example, if you want Grafana and Prometheus available at the same time, run each command in its own terminal window/tab.
 
-You're ready — start with **Lab 1!**
+You're ready - start with **Lab 1!**
 
 ## Tips
 

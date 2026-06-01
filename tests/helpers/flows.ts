@@ -121,7 +121,7 @@ export async function unauthRedirect(page: Page) {
   await expect(page.getByRole('heading', { name: 'Login Required' })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Login to Continue' })).toBeVisible();
 
-  // Check orders redirect — redirects to login page
+  // Check orders redirect - redirects to login page
   await page.goto('/orders');
   await expect(page).toHaveURL(/\/auth\/login\?callbackUrl/, { timeout: 10000 });
 }

@@ -7,7 +7,7 @@
     1. Resolves each user email to an Entra ID (Azure AD) object ID
     2. Assigns "Azure Kubernetes Service RBAC Cluster Admin" on the team's AKS cluster
     3. Assigns "AcrPull" on the team's ACR
-    Role assignments are idempotent — re-running is safe (existing assignments are skipped).
+    Role assignments are idempotent - re-running is safe (existing assignments are skipped).
 
 .PARAMETER TeamsFile
     Path to the teams.json configuration file. Default: teams.json in the same directory.
@@ -30,6 +30,7 @@ $ErrorActionPreference = "Stop"
 # Well-known Azure built-in role definition IDs
 $AKS_CLUSTER_ADMIN_ROLE = "b1ff04bb-8a4e-4dc4-8eb5-8693973ce19b"  # Azure Kubernetes Service RBAC Cluster Admin
 $ACR_PULL_ROLE = "7f951dda-4ed3-4680-a7ca-43fe172d538d"            # AcrPull
+$CONTRIBUTOR_ROLE = "b24988ac-6180-42a0-ab88-20f7382dd24c"         # Contributor
 
 # --- Load teams config ---
 if (-not (Test-Path $TeamsFile)) {
@@ -76,11 +77,19 @@ foreach ($team in $teams) {
 
     Write-Host "  Users: $($team.users.Count)" -ForegroundColor Gray
 
+    # Resolve Resource Group resource ID
+    Write-Host "  Resolving Resource Group ID..." -ForegroundColor Gray
+    $rgId = az group show --name $rgName --query id --output tsv 2>$null
+    if ($LASTEXITCODE -ne 0 -or -not $rgId) {
+        Write-Warning "  Resource Group '$rgName' not found - skipping team"
+        continue
+    }
+
     # Resolve AKS cluster resource ID
     Write-Host "  Resolving AKS cluster ID..." -ForegroundColor Gray
     $aksId = az aks show --resource-group $rgName --name $aksName --query id --output tsv 2>$null
     if ($LASTEXITCODE -ne 0 -or -not $aksId) {
-        Write-Warning "  AKS cluster '$aksName' not found in '$rgName' — skipping team"
+        Write-Warning "  AKS cluster '$aksName' not found in '$rgName' - skipping team"
         continue
     }
 
@@ -88,7 +97,7 @@ foreach ($team in $teams) {
     Write-Host "  Resolving ACR ID..." -ForegroundColor Gray
     $acrId = az acr show --name $acrName --query id --output tsv 2>$null
     if ($LASTEXITCODE -ne 0 -or -not $acrId) {
-        Write-Warning "  ACR '$acrName' not found — skipping ACR role assignments"
+        Write-Warning "  ACR '$acrName' not found - skipping ACR role assignments"
         $acrId = $null
     }
 
@@ -99,18 +108,43 @@ foreach ($team in $teams) {
         # Resolve user email to Entra ID object ID
         $userId = az ad user show --id $userEmail --query id --output tsv 2>$null
         if ($LASTEXITCODE -ne 0 -or -not $userId) {
-            Write-Warning "    User '$userEmail' not found in Entra ID — skipping"
+            Write-Warning "    User '$userEmail' not found in Entra ID - skipping"
             $results += [PSCustomObject]@{
                 Team   = $name
                 User   = $userEmail
-                Role   = "—"
-                Scope  = "—"
+                Role   = "-"
+                Scope  = "-"
                 Status = "USER NOT FOUND"
             }
             continue
         }
 
         Write-Host "    Object ID: $userId" -ForegroundColor DarkGray
+
+        # Assign Contributor on the Resource Group
+        Write-Host "    Assigning Contributor on RG..." -ForegroundColor Green -NoNewline
+        az role assignment create `
+            --assignee-object-id $userId `
+            --assignee-principal-type User `
+            --role $CONTRIBUTOR_ROLE `
+            --scope $rgId `
+            --output none 2>$null
+
+        if ($LASTEXITCODE -eq 0) {
+            Write-Host " OK" -ForegroundColor DarkGreen
+            $rgStatus = "Assigned"
+        } else {
+            Write-Host " FAILED" -ForegroundColor Red
+            $rgStatus = "Failed"
+        }
+
+        $results += [PSCustomObject]@{
+            Team   = $name
+            User   = $userEmail
+            Role   = "Contributor"
+            Scope  = $rgName
+            Status = $rgStatus
+        }
 
         # Assign AKS RBAC Cluster Admin on the AKS cluster
         Write-Host "    Assigning AKS RBAC Cluster Admin..." -ForegroundColor Green -NoNewline

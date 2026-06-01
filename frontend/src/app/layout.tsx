@@ -8,7 +8,7 @@ import WebVitalsReporter from '@/components/WebVitalsReporter';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Oranje Markt — Dutch Specialty Products',
+  title: 'Oranje Markt - Dutch Specialty Products',
   description: 'Your online destination for authentic Dutch specialty products. Cheese, stroopwafels, tulips, and more.',
 };
 

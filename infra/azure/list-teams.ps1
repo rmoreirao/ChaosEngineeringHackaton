@@ -65,8 +65,8 @@ foreach ($team in $teams) {
             ResourceGroup = $rgName
             RGStatus      = "NOT FOUND"
             AKSCluster    = $aksName
-            K8sVersion    = "—"
-            FrontendIP    = "—"
+            K8sVersion    = "-"
+            FrontendIP    = "-"
         }
         continue
     }
@@ -76,14 +76,14 @@ foreach ($team in $teams) {
     if (-not $rgState) { $rgState = "Unknown" }
 
     # Get AKS cluster info
-    $k8sVersion = "—"
+    $k8sVersion = "-"
     $aksInfo = az aks show --resource-group $rgName --name $aksName --query kubernetesVersion --output tsv 2>$null
     if ($LASTEXITCODE -eq 0 -and $aksInfo) {
         $k8sVersion = $aksInfo
     }
 
     # Get frontend public IP via kubectl
-    $frontendIP = "—"
+    $frontendIP = "-"
     # Switch context to this team's cluster
     az aks get-credentials --resource-group $rgName --name $aksName --overwrite-existing --admin --output none 2>$null
     if ($LASTEXITCODE -eq 0) {
@@ -106,7 +106,7 @@ foreach ($team in $teams) {
 $results | Format-Table -AutoSize
 
 # Show access URLs for teams with IPs
-$withIPs = $results | Where-Object { $_.FrontendIP -ne "—" }
+$withIPs = $results | Where-Object { $_.FrontendIP -ne "-" }
 if ($withIPs) {
     Write-Host "Access URLs:" -ForegroundColor Green
     foreach ($r in $withIPs) {

@@ -1,10 +1,10 @@
-# Oranje Markt — Resilience Runbook
+# Oranje Markt - Resilience Runbook
 
 > This runbook provides step-by-step procedures for handling common failures in the Oranje Markt application running on AKS.
 
 ---
 
-## 1. Pod Failure — Backend or Frontend Pod Crashes
+## 1. Pod Failure - Backend or Frontend Pod Crashes
 
 ### Detection
 ```bash
@@ -36,13 +36,13 @@ kubectl top pods -n oranje-markt
 
 ### Remediation
 ```bash
-# If OOMKilled — increase memory limit
+# If OOMKilled - increase memory limit
 kubectl set resources deployment/backend -n oranje-markt --limits=memory=1Gi
 
-# If bad config — rollback to previous version
+# If bad config - rollback to previous version
 kubectl rollout undo deployment/backend -n oranje-markt
 
-# If single pod and need immediate recovery — restart the deployment
+# If single pod and need immediate recovery - restart the deployment
 kubectl rollout restart deployment/backend -n oranje-markt
 ```
 
@@ -61,7 +61,7 @@ curl -s http://<frontend-ip>/api/health
 
 ---
 
-## 2. Database Failure — PostgreSQL Pod Unresponsive
+## 2. Database Failure - PostgreSQL Pod Unresponsive
 
 ### Detection
 ```bash
@@ -93,13 +93,13 @@ kubectl exec -n oranje-markt postgres-0 -- df -h /var/lib/postgresql/data
 
 ### Remediation
 ```bash
-# If pod is crashed but PVC exists — just wait for auto-restart
+# If pod is crashed but PVC exists - just wait for auto-restart
 kubectl get pods -n oranje-markt -l app=postgres -w
 
-# If backend lost connection — restart backend after DB is back
+# If backend lost connection - restart backend after DB is back
 kubectl rollout restart deployment/backend -n oranje-markt
 
-# If PVC was deleted — recreate PVC and re-run migrations
+# If PVC was deleted - recreate PVC and re-run migrations
 kubectl apply -f infra/k8s/postgres/
 kubectl rollout restart deployment/backend -n oranje-markt
 
@@ -127,7 +127,7 @@ curl -s http://<frontend-ip>/api/products | head -c 200
 
 ---
 
-## 3. Node Failure — AKS Node Goes NotReady
+## 3. Node Failure - AKS Node Goes NotReady
 
 ### Detection
 ```bash
@@ -155,17 +155,17 @@ az aks show --resource-group <rg-name> --name <aks-name> --query "agentPoolProfi
 
 ### Remediation
 ```bash
-# If node is cordoned — uncordon it
+# If node is cordoned - uncordon it
 kubectl uncordon <node-name>
 
-# If node is truly dead — AKS auto-repair kicks in (5-10 min)
+# If node is truly dead - AKS auto-repair kicks in (5-10 min)
 # Monitor the auto-repair process:
 az aks show --resource-group <rg-name> --name <aks-name> --query "powerState" -o tsv
 
-# If pods are stuck on the dead node — force delete them
+# If pods are stuck on the dead node - force delete them
 kubectl delete pod <pod-name> -n oranje-markt --grace-period=0 --force
 
-# If auto-repair fails — manually reboot the VMSS instance
+# If auto-repair fails - manually reboot the VMSS instance
 az vmss restart --resource-group <node-rg> --name <vmss-name> --instance-ids <instance-id>
 ```
 
@@ -185,7 +185,7 @@ kubectl get pods -n oranje-markt -o wide
 
 ---
 
-## 4. High Load — Application Under Heavy Traffic
+## 4. High Load - Application Under Heavy Traffic
 
 ### Detection
 ```bash
@@ -216,10 +216,10 @@ kubectl exec -n oranje-markt postgres-0 -- psql -U oranje -d oranjedb -c "SELECT
 kubectl scale deployment/backend -n oranje-markt --replicas=5
 kubectl scale deployment/frontend -n oranje-markt --replicas=3
 
-# If HPA is configured — verify it's scaling
+# If HPA is configured - verify it's scaling
 kubectl get hpa -n oranje-markt -w
 
-# If database is the bottleneck — increase postgres resources
+# If database is the bottleneck - increase postgres resources
 kubectl set resources statefulset/postgres -n oranje-markt --limits=cpu=1,memory=1Gi
 
 # Rate limiting (if ingress is configured)
@@ -245,7 +245,7 @@ kubectl logs -n oranje-markt -l app=backend --tail=20 | grep -c "error\|Error"
 
 ---
 
-## 5. Deployment Failure — New Release Stuck in CrashLoopBackOff
+## 5. Deployment Failure - New Release Stuck in CrashLoopBackOff
 
 ### Detection
 ```bash

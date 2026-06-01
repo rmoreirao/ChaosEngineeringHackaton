@@ -37,7 +37,7 @@ resolve_base_url
 export BASE_URL
 
 echo "============================================"
-echo "  Oranje Markt — Traffic Generator"
+echo "  Oranje Markt - Traffic Generator"
 echo "============================================"
 echo "  Scenarios:          $SCENARIOS"
 echo "  Users per scenario: $USERS"

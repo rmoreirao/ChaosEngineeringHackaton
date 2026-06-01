@@ -1,5 +1,5 @@
 # Broken deployment: Pending (impossible resource requests)
-# Requests 64Gi memory and 32 CPU cores — far exceeding any node's capacity.
+# Requests 64Gi memory and 32 CPU cores - far exceeding any node's capacity.
 apiVersion: apps/v1
 kind: Deployment
 metadata:

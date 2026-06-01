@@ -1,5 +1,5 @@
 #!/bin/bash
-# detect-anomalies.sh — Simple anomaly detection for the Oranje Markt namespace
+# detect-anomalies.sh - Simple anomaly detection for the Oranje Markt namespace
 # Usage: ./detect-anomalies.sh [namespace]
 
 NAMESPACE="${1:-oranje-markt}"
@@ -7,7 +7,7 @@ RESTART_THRESHOLD=3
 ISSUES_FOUND=0
 
 echo "============================================"
-echo " Oranje Markt — Anomaly Detection Report"
+echo " Oranje Markt - Anomaly Detection Report"
 echo " Namespace: ${NAMESPACE}"
 echo " Timestamp: $(date -u +"%Y-%m-%dT%H:%M:%SZ")"
 echo "============================================"
@@ -19,7 +19,7 @@ NON_RUNNING=$(kubectl get pods -n "${NAMESPACE}" --no-headers 2>/dev/null | awk 
 if [ -n "${NON_RUNNING}" ]; then
     echo "[CRITICAL] Pods NOT in Running state:"
     echo "${NON_RUNNING}" | while read -r pod status; do
-        echo "  ⚠  ${pod} — ${status}"
+        echo "  ⚠  ${pod} - ${status}"
     done
     ISSUES_FOUND=$((ISSUES_FOUND + 1))
 else
@@ -33,7 +33,7 @@ HIGH_RESTARTS=$(kubectl get pods -n "${NAMESPACE}" --no-headers 2>/dev/null | aw
 if [ -n "${HIGH_RESTARTS}" ]; then
     echo "[WARNING] Pods with high restart counts (>${RESTART_THRESHOLD}):"
     echo "${HIGH_RESTARTS}" | while read -r pod restarts; do
-        echo "  ⚠  ${pod} — ${restarts} restarts"
+        echo "  ⚠  ${pod} - ${restarts} restarts"
     done
     ISSUES_FOUND=$((ISSUES_FOUND + 1))
 else
@@ -47,7 +47,7 @@ NOT_READY=$(kubectl get pods -n "${NAMESPACE}" --no-headers 2>/dev/null | awk '{
 if [ -n "${NOT_READY}" ]; then
     echo "[WARNING] Pods Running but NOT Ready:"
     echo "${NOT_READY}" | while read -r pod ready; do
-        echo "  ⚠  ${pod} — Ready: ${ready}"
+        echo "  ⚠  ${pod} - Ready: ${ready}"
     done
     ISSUES_FOUND=$((ISSUES_FOUND + 1))
 else
@@ -62,11 +62,11 @@ if [ -n "${SERVICES}" ]; then
     for svc in ${SERVICES}; do
         ENDPOINTS=$(kubectl get endpoints -n "${NAMESPACE}" "${svc}" -o jsonpath='{.subsets[*].addresses[*].ip}' 2>/dev/null)
         if [ -z "${ENDPOINTS}" ]; then
-            echo "[CRITICAL] Service '${svc}' has NO endpoints — no backends serving traffic"
+            echo "[CRITICAL] Service '${svc}' has NO endpoints - no backends serving traffic"
             ISSUES_FOUND=$((ISSUES_FOUND + 1))
         else
             ENDPOINT_COUNT=$(echo "${ENDPOINTS}" | wc -w)
-            echo "[OK] Service '${svc}' — ${ENDPOINT_COUNT} endpoint(s)"
+            echo "[OK] Service '${svc}' - ${ENDPOINT_COUNT} endpoint(s)"
         fi
     done
 else

@@ -12,7 +12,7 @@ spec:
       app: postgres
 ---
 # CronJob: backs up the PostgreSQL database every hour using pg_dump.
-# Stores the backup in a temporary volume (emptyDir) — in production,
+# Stores the backup in a temporary volume (emptyDir) - in production,
 # use Azure Blob Storage or a PersistentVolumeClaim for durable backups.
 apiVersion: batch/v1
 kind: CronJob

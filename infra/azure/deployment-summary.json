@@ -1,8 +1,130 @@
-{
-  "Team": "hackathon-chaosengineeringorchestratoralpha",
-  "ResourceGroup": "rg-hackathon-chaosengineeringorchestratoralpha",
-  "ResourcesSuffix": "chaosalpha",
-  "AKS": "chaosalpha-aks",
-  "ACR": "chaosalphaacr",
-  "FrontendURL": "http://20.170.97.10"
-}
+[
+  {
+    "Team": "hackathon-chaosengineeringorchestratoralpha",
+    "ResourceGroup": "rg-hackathon-chaosengineeringorchestratoralpha",
+    "ResourcesSuffix": "chaosalpha",
+    "AKS": "chaosalpha-aks",
+    "ACR": "chaosalphaacr",
+    "FrontendURL": "http://20.170.97.10"
+  },
+  {
+    "Team": "hackathon-chaosengineeringorchestratorbravo",
+    "ResourceGroup": "rg-hackathon-chaosengineeringorchestratorbravo",
+    "ResourcesSuffix": "chaosbravo",
+    "AKS": "chaosbravo-aks",
+    "ACR": "chaosbravoacr",
+    "FrontendURL": "http://98.67.223.51"
+  },
+  {
+    "Team": "hackathon-chaosengineeringorchestratorcharlie",
+    "ResourceGroup": "rg-hackathon-chaosengineeringorchestratorcharlie",
+    "ResourcesSuffix": "chaoscharlie",
+    "AKS": "chaoscharlie-aks",
+    "ACR": "chaoscharlieacr",
+    "FrontendURL": "http://(pending)"
+  },
+  {
+    "Team": "hackathon-chaosengineeringorchestratordelta",
+    "ResourceGroup": "rg-hackathon-chaosengineeringorchestratordelta",
+    "ResourcesSuffix": "chaosdelta",
+    "AKS": "chaosdelta-aks",
+    "ACR": "chaosdeltaacr",
+    "FrontendURL": "http://4.182.212.117"
+  },
+  {
+    "Team": "hackathon-chaosengineeringorchestratorecho",
+    "ResourceGroup": "rg-hackathon-chaosengineeringorchestratorecho",
+    "ResourcesSuffix": "chaosecho",
+    "AKS": "chaosecho-aks",
+    "ACR": "chaosechoacr",
+    "FrontendURL": "http://20.79.247.91"
+  },
+  {
+    "Team": "hackathon-chaosengineeringorchestratorfoxtrot",
+    "ResourceGroup": "rg-hackathon-chaosengineeringorchestratorfoxtrot",
+    "ResourcesSuffix": "chaosfoxtrot",
+    "AKS": "chaosfoxtrot-aks",
+    "ACR": "chaosfoxtrotacr",
+    "FrontendURL": "http://48.201.49.60"
+  },
+  {
+    "Team": "hackathon-chaosengineeringorchestratorgolf",
+    "ResourceGroup": "rg-hackathon-chaosengineeringorchestratorgolf",
+    "ResourcesSuffix": "chaosgolf",
+    "AKS": "chaosgolf-aks",
+    "ACR": "chaosgolfacr",
+    "FrontendURL": "http://20.79.100.234"
+  },
+  {
+    "Team": "hackathon-chaosengineeringorchestratorhotel",
+    "ResourceGroup": "rg-hackathon-chaosengineeringorchestratorhotel",
+    "ResourcesSuffix": "chaoshotel",
+    "AKS": "chaoshotel-aks",
+    "ACR": "chaoshotelacr",
+    "FrontendURL": "http://20.79.100.136"
+  },
+  {
+    "Team": "hackathon-chaosengineeringorchestratorindia",
+    "ResourceGroup": "rg-hackathon-chaosengineeringorchestratorindia",
+    "ResourcesSuffix": "chaosindia",
+    "AKS": "chaosindia-aks",
+    "ACR": "chaosindiaacr",
+    "FrontendURL": "http://4.182.179.188"
+  },
+  {
+    "Team": "hackathon-chaosengineeringorchestratorjuliet",
+    "ResourceGroup": "rg-hackathon-chaosengineeringorchestratorjuliet",
+    "ResourcesSuffix": "chaosjuliet",
+    "AKS": "chaosjuliet-aks",
+    "ACR": "chaosjulietacr",
+    "FrontendURL": "http://4.182.98.116"
+  },
+  {
+    "Team": "hackathon-chaosengineeringorchestratorkilo",
+    "ResourceGroup": "rg-hackathon-chaosengineeringorchestratorkilo",
+    "ResourcesSuffix": "chaoskilo",
+    "AKS": "chaoskilo-aks",
+    "ACR": "chaoskiloacr",
+    "FrontendURL": "http://131.189.248.167"
+  },
+  {
+    "Team": "hackathon-chaosengineeringorchestratorlima",
+    "ResourceGroup": "rg-hackathon-chaosengineeringorchestratorlima",
+    "ResourcesSuffix": "chaoslima",
+    "AKS": "chaoslima-aks",
+    "ACR": "chaoslimaacr",
+    "FrontendURL": "http://20.170.67.152"
+  },
+  {
+    "Team": "hackathon-chaosengineeringorchestratormike",
+    "ResourceGroup": "rg-hackathon-chaosengineeringorchestratormike",
+    "ResourcesSuffix": "chaosmike",
+    "AKS": "chaosmike-aks",
+    "ACR": "chaosmikeacr",
+    "FrontendURL": "http://131.189.182.217"
+  },
+  {
+    "Team": "hackathon-chaosengineeringorchestratornovember",
+    "ResourceGroup": "rg-hackathon-chaosengineeringorchestratornovember",
+    "ResourcesSuffix": "chaosnovember",
+    "AKS": "chaosnovember-aks",
+    "ACR": "chaosnovemberacr",
+    "FrontendURL": "http://20.79.91.220"
+  },
+  {
+    "Team": "hackathon-chaosengineeringorchestratororganizersplayground",
+    "ResourceGroup": "rg-hackathon-chaosengineeringorchestratororganizersplayground",
+    "ResourcesSuffix": "chaosorganizersplayground",
+    "AKS": "chaosorganizersplayground-aks",
+    "ACR": "chaosorganizersplaygroundacr",
+    "FrontendURL": "http://4.182.183.61"
+  },
+  {
+    "Team": "hackathon-chaosengineeringorchestratoroscar",
+    "ResourceGroup": "rg-hackathon-chaosengineeringorchestratoroscar",
+    "ResourcesSuffix": "chaososcar",
+    "AKS": "chaososcar-aks",
+    "ACR": "chaososcaracr",
+    "FrontendURL": "http://131.189.231.44"
+  }
+]

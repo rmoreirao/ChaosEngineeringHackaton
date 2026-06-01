@@ -67,9 +67,9 @@ The script supports two authentication methods. **Azure credentials are used by 
 ### Default: Azure AI Foundry (DefaultAzureCredential)
 When no `--api-key` or `OPENAI_API_KEY` is set, the script authenticates via `DefaultAzureCredential` (az login, VS Code login, managed identity, etc.) using the `OpenAI` client with an Azure `base_url`.
 
-- `--azure-endpoint` — Azure OpenAI endpoint URL (default: `https://ai-foundry-ai-agents-for-beginners.openai.azure.com/`)
+- `--azure-endpoint` - Azure OpenAI endpoint URL (default: `https://ai-foundry-ai-agents-for-beginners.openai.azure.com/`)
 
-No API key is needed — the script obtains a bearer token from the logged-in Azure session.
+No API key is needed - the script obtains a bearer token from the logged-in Azure session.
 
 ### Override: API Key (OpenAI direct)
 1. `--api-key` argument (use if user provided key in chat)

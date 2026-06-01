@@ -30,8 +30,8 @@ resource aksIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-3
 @description('The resource ID of the managed identity')
 output identityId string = aksIdentity.id
 
-@description('The principal (object) ID — used for role assignments')
+@description('The principal (object) ID - used for role assignments')
 output principalId string = aksIdentity.properties.principalId
 
-@description('The client (application) ID — used in workload identity configurations')
+@description('The client (application) ID - used in workload identity configurations')
 output clientId string = aksIdentity.properties.clientId

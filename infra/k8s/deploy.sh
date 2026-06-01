@@ -122,6 +122,7 @@ kubectl create configmap grafana-dashboard-files \
   --from-file="$DASHBOARD_DIR/db-dashboard.json" \
   --from-file="$DASHBOARD_DIR/frontend-dashboard.json" \
   --from-file="$DASHBOARD_DIR/infra-dashboard.json" \
+  --from-file="$DASHBOARD_DIR/backend-load-dashboard.json" \
   -n oranje-markt
 
 kubectl apply -f "$K8S_DIR/observability/grafana/"

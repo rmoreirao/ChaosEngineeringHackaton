@@ -1,12 +1,12 @@
-# Lab 3 — AI-Driven Resilience Improvement: Solutions Walkthrough
+# Lab 3 - AI-Driven Resilience Improvement: Solutions Walkthrough
 
 > **App:** Oranje Markt on AKS · **Namespace:** `oranje-markt`
 >
 > | Component  | Tech        | Deployment/StatefulSet | Port  | Health          |
 > |------------|-------------|------------------------|-------|-----------------|
 > | Backend    | Express     | `backend`              | :4000 | `/api/health`   |
-> | Frontend   | Next.js     | `frontend`             | :3000 | —               |
-> | PostgreSQL | PostgreSQL  | `postgres` (SS)        | :5432 | —               |
+> | Frontend   | Next.js     | `frontend`             | :3000 | -               |
+> | PostgreSQL | PostgreSQL  | `postgres` (SS)        | :5432 | -               |
 >
 > **Starting state:** single replicas, no PDBs, no HPA, basic probes only.
 >
@@ -21,18 +21,18 @@
 
 ---
 
-## Solution 1 — From Experiments to Improvements: AI Resilience Analysis
+## Solution 1 - From Experiments to Improvements: AI Resilience Analysis
 
 **Goal:** Feed experiment findings + the full repo to AI → get a prioritized cross-layer resilience roadmap.
 
 ### Step 1: Open the repo with Copilot
 
-Everything the AI needs is in the repository — no need to export YAMLs from the cluster. Use one of these methods:
+Everything the AI needs is in the repository - no need to export YAMLs from the cluster. Use one of these methods:
 
 | Tool | How to provide repo context |
 |------|---------------------------|
-| **VS Code Copilot Chat** | Open the repo folder, use **Agent Mode** — Copilot automatically sees your workspace |
-| **Copilot CLI** | `cd` into the repo folder — it reads files on demand |
+| **VS Code Copilot Chat** | Open the repo folder, use **Agent Mode** - Copilot automatically sees your workspace |
+| **Copilot CLI** | `cd` into the repo folder - it reads files on demand |
 
 Key paths for context:
 - **Kubernetes manifests:** `infra/k8s/` (backend, frontend, postgres deployments, services, observability stack)
@@ -44,15 +44,15 @@ Key paths for context:
 
 ### Step 2: Prompt Copilot for a cross-layer resilience assessment
 
-Use **Agent Mode** or **Copilot Chat** with the repo open. Combine repo context with experiment findings — **replace the example findings below with your own observations from Labs 1-2:**
+Use **Agent Mode** or **Copilot Chat** with the repo open. Combine repo context with experiment findings - **replace the example findings below with your own observations from Labs 1-2:**
 
 ```text
-Look at this repository — it contains a 3-tier application (Next.js frontend, Express backend, PostgreSQL) deployed on AKS.
+Look at this repository - it contains a 3-tier application (Next.js frontend, Express backend, PostgreSQL) deployed on AKS.
 Review the Kubernetes manifests in infra/k8s/, the backend code in backend/src/, the frontend code in frontend/src/, and the observability setup in infra/observability/.
 
 We ran chaos experiments and found these issues:
 1. Killing a backend pod causes ~30s downtime (single replica)
-2. Killing the database pod causes cascading failure — backend's liveness probe restarts it too
+2. Killing the database pod causes cascading failure - backend's liveness probe restarts it too
 3. Node drain evicts all pods simultaneously (no PDBs)
 4. Load test with 5 clients saturates backend CPU at 500m limit
 
@@ -67,27 +67,27 @@ The AI should produce a structured roadmap like this (your results may vary):
 
 | Layer | Improvement | Impact | Effort |
 |-------|-------------|--------|--------|
-| **Kubernetes** | Increase replicas to 3 + add PodDisruptionBudget | High — eliminates single-pod downtime | Low |
-| **Kubernetes** | Add HorizontalPodAutoscaler | High — handles load spikes automatically | Low |
-| **Kubernetes** | Add topology spread constraints | Medium — distributes pods across nodes | Low |
-| **Infrastructure** | Database backup CronJob | High — enables data recovery | Medium |
-| **Observability** | Add Prometheus alerting rules for error rate & pod restarts | High — proactive failure detection | Medium |
-| **Observability** | Persistent storage for Prometheus/Loki (PVC instead of EmptyDir) | Medium — retain metrics across restarts | Medium |
-| **Code** | Add retry logic with backoff to database queries | High — handles transient failures | Medium |
-| **Code** | Separate liveness from readiness probe (don't check DB in liveness) | High — prevents cascading restart | Low |
-| **Code** | Add graceful shutdown handler (SIGTERM) | Medium — drain in-flight requests | Low |
+| **Kubernetes** | Increase replicas to 3 + add PodDisruptionBudget | High - eliminates single-pod downtime | Low |
+| **Kubernetes** | Add HorizontalPodAutoscaler | High - handles load spikes automatically | Low |
+| **Kubernetes** | Add topology spread constraints | Medium - distributes pods across nodes | Low |
+| **Infrastructure** | Database backup CronJob | High - enables data recovery | Medium |
+| **Observability** | Add Prometheus alerting rules for error rate & pod restarts | High - proactive failure detection | Medium |
+| **Observability** | Persistent storage for Prometheus/Loki (PVC instead of EmptyDir) | Medium - retain metrics across restarts | Medium |
+| **Code** | Add retry logic with backoff to database queries | High - handles transient failures | Medium |
+| **Code** | Separate liveness from readiness probe (don't check DB in liveness) | High - prevents cascading restart | Low |
+| **Code** | Add graceful shutdown handler (SIGTERM) | Medium - drain in-flight requests | Low |
 
 ### Key insight
 
-The AI identifies improvements across **all layers** — K8s (replicas, PDB), infrastructure (backups), observability (alerting), and code (retries, circuit breakers). Resilience is a cross-cutting concern.
+The AI identifies improvements across **all layers** - K8s (replicas, PDB), infrastructure (backups), observability (alerting), and code (retries, circuit breakers). Resilience is a cross-cutting concern.
 
 ### Discussion Answer
 
-How to prioritize: start with **high impact + low effort** items (replicas, PDB, topology spread) — these are K8s-only changes that don't require code changes or new infrastructure. Then move to **high impact + medium effort** (alerting rules, backups, retry logic). The AI's prioritization should roughly match engineering intuition from running the experiments.
+How to prioritize: start with **high impact + low effort** items (replicas, PDB, topology spread) - these are K8s-only changes that don't require code changes or new infrastructure. Then move to **high impact + medium effort** (alerting rules, backups, retry logic). The AI's prioritization should roughly match engineering intuition from running the experiments.
 
 ---
 
-## Solution 2 — Implement Quick Wins with AI
+## Solution 2 - Implement Quick Wins with AI
 
 **Goal:** Pick 1-2 improvements and use AI to generate & apply them.
 
@@ -180,7 +180,7 @@ kubectl logs -n oranje-markt -l job-name=manual-backup    # "Backup completed: .
 kubectl delete job manual-backup -n oranje-markt
 ```
 
-**Note:** The PDB on a single-replica StatefulSet shows `ALLOWED DISRUPTIONS: 0` — this means node drains will **block**, protecting your database from accidental eviction.
+**Note:** The PDB on a single-replica StatefulSet shows `ALLOWED DISRUPTIONS: 0` - this means node drains will **block**, protecting your database from accidental eviction.
 
 ### Option C: Prometheus Alerting Rules
 
@@ -207,20 +207,20 @@ Add retry logic with exponential backoff for transient database failures.
 Or:
 
 ```text
-Look at the health endpoint in backend/src/server.ts — it's used for both liveness and readiness
+Look at the health endpoint in backend/src/server.ts - it's used for both liveness and readiness
 probes, and it queries the database. When the database is down, Kubernetes kills the backend pod
 too (cascading failure). How should I separate liveness from readiness to prevent this?
 ```
 
 **Expected:** For the health endpoint separation, Copilot should suggest:
-- **Readiness probe** → `/api/health` (checks DB connectivity — gates traffic)
-- **Liveness probe** → `/api/livez` (simple 200 OK — only checks process is alive, does NOT check DB)
+- **Readiness probe** → `/api/health` (checks DB connectivity - gates traffic)
+- **Liveness probe** → `/api/livez` (simple 200 OK - only checks process is alive, does NOT check DB)
 
 This prevents the cascading restart discovered in Lab 2: when the DB is down, backend stays alive (liveness passes) but stops receiving traffic (readiness fails).
 
 ---
 
-## Solution 3 — Validate: Re-run Chaos Experiments
+## Solution 3 - Validate: Re-run Chaos Experiments
 
 **Goal:** Prove improvements work by re-running Lab 1 experiments and comparing before/after.
 
@@ -234,7 +234,7 @@ Open a **separate terminal** and run a continuous health check to measure downti
 kubectl port-forward svc/backend -n oranje-markt 4000:4000 &
 while true; do
   CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:4000/api/health 2>/dev/null)
-  echo "$(date +%H:%M:%S) — HTTP $CODE"
+  echo "$(date +%H:%M:%S) - HTTP $CODE"
   sleep 1
 done
 ```
@@ -249,7 +249,7 @@ kubectl delete pod -n oranje-markt -l app=backend --wait=false
 kubectl get pods -n oranje-markt -l app=backend -w
 ```
 
-**Expected:** With 3 replicas, killing 1 pod leaves 2 still running — **zero downtime**. The deleted pod is automatically replaced by the ReplicaSet controller.
+**Expected:** With 3 replicas, killing 1 pod leaves 2 still running - **zero downtime**. The deleted pod is automatically replaced by the ReplicaSet controller.
 
 #### Test 2: Drain a node
 
@@ -271,7 +271,7 @@ $NODE = kubectl get pod postgres-0 -n oranje-markt -o jsonpath='{.spec.nodeName}
 kubectl drain $NODE --ignore-daemonsets --delete-emptydir-data --timeout=30s
 ```
 
-**Expected:** The drain **blocks** — evicting `postgres-0` would violate the PDB (`minAvailable: 1` with only 1 pod).
+**Expected:** The drain **blocks** - evicting `postgres-0` would violate the PDB (`minAvailable: 1` with only 1 pod).
 
 ```bash
 kubectl uncordon $NODE
@@ -301,7 +301,7 @@ Produce a brief before/after comparison.
 
 ---
 
-## Solution 4 — Cleanup & Final State
+## Solution 4 - Cleanup & Final State
 
 ### Option A: Keep the hardened state (recommended for review)
 
@@ -313,7 +313,7 @@ kubectl get hpa -n oranje-markt
 
 ### Option B: Restore to original (fragile) state
 
-Use `kubectl scale` to restore — do **not** re-apply the repo manifests as they may reference a different ACR:
+Use `kubectl scale` to restore - do **not** re-apply the repo manifests as they may reference a different ACR:
 
 ```bash
 kubectl scale deployment/backend -n oranje-markt --replicas=1
@@ -355,8 +355,8 @@ The `manifests/` and `scripts/` directories contain ready-to-use reference solut
 
 ### Key Takeaways
 
-1. **AI + repo context = comprehensive analysis** — Pointing Copilot at the full repo (code, manifests, observability config) produces better recommendations than pasting individual YAMLs.
-2. **Start with quick wins** — Replicas + PDB eliminates the most common failure mode (single-pod outage) with minimal effort and zero code changes.
-3. **All layers matter** — The AI roadmap shows resilience spans K8s, infrastructure, observability, and code — but you don't have to fix everything at once.
-4. **Validate with chaos** — Re-running Lab 1 experiments after hardening produces measurable before/after proof.
-5. **The loop closes** — Chaos engineering: break → learn → improve → validate → repeat.
+1. **AI + repo context = comprehensive analysis** - Pointing Copilot at the full repo (code, manifests, observability config) produces better recommendations than pasting individual YAMLs.
+2. **Start with quick wins** - Replicas + PDB eliminates the most common failure mode (single-pod outage) with minimal effort and zero code changes.
+3. **All layers matter** - The AI roadmap shows resilience spans K8s, infrastructure, observability, and code - but you don't have to fix everything at once.
+4. **Validate with chaos** - Re-running Lab 1 experiments after hardening produces measurable before/after proof.
+5. **The loop closes** - Chaos engineering: break → learn → improve → validate → repeat.

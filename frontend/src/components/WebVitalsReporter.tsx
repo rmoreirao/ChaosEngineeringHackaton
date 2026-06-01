@@ -49,7 +49,7 @@ function observeWebVitals(route: string): PerformanceObserver[] {
     observers.push(fidObserver);
   } catch {}
 
-  // CLS — accumulate and report once on visibility change
+  // CLS - accumulate and report once on visibility change
   try {
     let clsValue = 0;
     const clsObserver = new PerformanceObserver((list) => {

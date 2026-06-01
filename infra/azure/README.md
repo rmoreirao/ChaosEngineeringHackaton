@@ -1,6 +1,6 @@
-# Azure Architecture — Oranje Markt (Chaos Engineering Hackathon)
+# Azure Architecture - Oranje Markt (Chaos Engineering Hackathon)
 
-This document describes the proposed Azure architecture for deploying the Oranje Markt application to **Azure Kubernetes Service (AKS)**. The architecture is intentionally kept simple and **not fully resilient** — it serves as a starting point for the Chaos Engineering Hackathon, giving teams clear areas to improve.
+This document describes the proposed Azure architecture for deploying the Oranje Markt application to **Azure Kubernetes Service (AKS)**. The architecture is intentionally kept simple and **not fully resilient** - it serves as a starting point for the Chaos Engineering Hackathon, giving teams clear areas to improve.
 
 ## Architecture Overview
 
@@ -56,7 +56,7 @@ This document describes the proposed Azure architecture for deploying the Oranje
 | **Resource Group** | `main.bicep` | Container for all resources |
 | **Virtual Network** | `modules/network.bicep` | VNet (10.0.0.0/16) with AKS subnet (10.0.0.0/22) |
 | **Managed Identity** | `modules/identity.bicep` | User-assigned identity for AKS to interact with Azure |
-| **AKS Cluster** | `modules/aks.bicep` | Kubernetes cluster — 3× Standard_D2s_v3 nodes, Azure CNI, RBAC |
+| **AKS Cluster** | `modules/aks.bicep` | Kubernetes cluster - 3× Standard_D2s_v3 nodes, Azure CNI, RBAC |
 
 ### To add manually
 
@@ -64,7 +64,7 @@ This document describes the proposed Azure architecture for deploying the Oranje
 |----------|---------|-----|
 | **Azure Container Registry (ACR)** | Store Docker images for frontend & backend | `az acr create` (see deployment steps below) |
 
-> **Why no Azure Database for PostgreSQL?** Intentionally omitted. PostgreSQL runs as an in-cluster StatefulSet — this is fragile by design, making it a great target for chaos experiments.
+> **Why no Azure Database for PostgreSQL?** Intentionally omitted. PostgreSQL runs as an in-cluster StatefulSet - this is fragile by design, making it a great target for chaos experiments.
 
 ## Deployment Steps
 
@@ -89,7 +89,7 @@ This creates: Resource Group, VNet, Managed Identity, and AKS Cluster.
 ### 2. Create Azure Container Registry
 
 ```bash
-# Create ACR (Basic SKU — cheapest option)
+# Create ACR (Basic SKU - cheapest option)
 az acr create \
   --resource-group rg-devai-hackathon \
   --name devaiHackathonAcr \
@@ -198,30 +198,30 @@ This architecture has several deliberate weaknesses that make it ideal for chaos
 
 As teams complete chaos experiments, they can harden the architecture:
 
-### Phase 1 — Basic Resilience
+### Phase 1 - Basic Resilience
 - [ ] Increase frontend and backend to **2+ replicas**
 - [ ] Add **PodDisruptionBudgets** to prevent full outages during node drains
 - [ ] Tune **liveness/readiness probes** (faster failure detection)
 - [ ] Set **resource requests and limits** on all pods
 
-### Phase 2 — Data Resilience
+### Phase 2 - Data Resilience
 - [ ] Migrate PostgreSQL to **Azure Database for PostgreSQL Flexible Server**
 - [ ] Enable **automated backups** and point-in-time restore
 - [ ] Add **connection pooling** (PgBouncer sidecar or built-in)
 
-### Phase 3 — Network & Security
+### Phase 3 - Network & Security
 - [ ] Add **Kubernetes NetworkPolicies** (restrict pod-to-pod traffic)
 - [ ] Deploy **NGINX Ingress Controller** with rate limiting
 - [ ] Enable **Azure Private Endpoints** for ACR and PostgreSQL
 - [ ] Add **Azure Key Vault** for secrets management
 
-### Phase 4 — Scalability & Availability
+### Phase 4 - Scalability & Availability
 - [ ] Enable **Horizontal Pod Autoscaler** (HPA) on frontend and backend
 - [ ] Enable **Cluster Autoscaler** on the AKS node pool
 - [ ] Spread nodes across **Availability Zones**
 - [ ] Add a **user node pool** to separate workloads from system pods
 
-### Phase 5 — Enterprise Observability
+### Phase 5 - Enterprise Observability
 - [ ] Move monitoring to **Azure Monitor + Container Insights**
 - [ ] Use **Azure Managed Grafana** (managed, always-available dashboards)
 - [ ] Ship logs to **Azure Log Analytics** instead of in-cluster Loki
@@ -280,10 +280,10 @@ Edit `teams.json` to define teams, users, and shared defaults:
 ```
 
 Each team entry supports:
-- **`name`** (required) — human-readable display name (used in logs/summary only)
-- **`rgName`** (required) — Azure Resource Group name. The RG must already exist (or you must have subscription-level rights to create it).
-- **`resourcesSuffix`** (required) — short, alphanumeric suffix (≤ ~20 chars) that drives all Azure resource names. Keep it short to stay within AKS (node-RG 80-char) and ACR (50-char) limits.
-- **`users`** (optional) — list of Entra ID user emails for RBAC assignment
+- **`name`** (required) - human-readable display name (used in logs/summary only)
+- **`rgName`** (required) - Azure Resource Group name. The RG must already exist (or you must have subscription-level rights to create it).
+- **`resourcesSuffix`** (required) - short, alphanumeric suffix (≤ ~20 chars) that drives all Azure resource names. Keep it short to stay within AKS (node-RG 80-char) and ACR (50-char) limits.
+- **`users`** (optional) - list of Entra ID user emails for RBAC assignment
 
 Resource names are derived from `resourcesSuffix` (not `name`):
 
@@ -327,7 +327,7 @@ This assigns:
 - **Azure Kubernetes Service RBAC Cluster Admin** on the team's AKS cluster (enables `kubectl` access)
 - **AcrPull** on the team's ACR (enables image inspection)
 
-Role assignments are idempotent — re-running is safe. Teams without a `users` array are skipped.
+Role assignments are idempotent - re-running is safe. Teams without a `users` array are skipped.
 
 > **Note:** After RBAC is assigned, users authenticate with `az aks get-credentials` (without `--admin`). The `--admin` flag used by `deploy-teams.ps1` bypasses Azure RBAC entirely.
 

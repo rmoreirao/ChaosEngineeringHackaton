@@ -76,7 +76,7 @@ export default function CheckoutPage() {
         <div className="bg-white p-6 rounded-xl shadow-sm">
           <h2 className="text-xl font-bold text-secondary mb-4">Payment</h2>
           <div className="p-4 bg-green-50 rounded-lg border border-green-200">
-            <p className="text-green-800 font-medium">💳 Mock Payment — Always Succeeds</p>
+            <p className="text-green-800 font-medium">💳 Mock Payment - Always Succeeds</p>
             <p className="text-green-600 text-sm mt-1">No real payment will be processed.</p>
           </div>
         </div>
@@ -105,7 +105,7 @@ export default function CheckoutPage() {
         )}
 
         <Button type="submit" size="lg" className="w-full" disabled={loading}>
-          {loading ? 'Processing...' : `Place Order — €${totalPrice.toFixed(2)}`}
+          {loading ? 'Processing...' : `Place Order - €${totalPrice.toFixed(2)}`}
         </Button>
       </form>
     </div>

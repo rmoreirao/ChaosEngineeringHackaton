@@ -17,7 +17,7 @@ if output_path.lower().endswith((".jpg", ".jpeg")) and img.mode == "RGBA":
     img = bg
 ```
 
-This also applies inside the save function — always check before saving as JPG.
+This also applies inside the save function - always check before saving as JPG.
 
 ## Save with Format-Specific Quality
 

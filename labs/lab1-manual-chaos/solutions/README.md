@@ -1,6 +1,6 @@
-# Lab 1 — Solutions: Manual Chaos Experiments
+# Lab 1 - Solutions: Manual Chaos Experiments
 
-> **Oranje Markt** on AKS — step-by-step walkthrough for every challenge.
+> **Oranje Markt** on AKS - step-by-step walkthrough for every challenge.
 
 | Component | Details |
 |-----------|---------|
@@ -9,15 +9,15 @@
 | Database | PostgreSQL · StatefulSet `postgres` · pod `postgres-0` · PVC `postgres-data` |
 | Namespace | `oranje-markt` |
 | Observability | Grafana (port-forward `svc/grafana` → 3001), Prometheus, Loki |
-| Cluster | 2 × Standard_D2s_v3 (2 vCPU, 8 GiB each) — node count may vary per team |
-| Backend init container | `db-migrate` — runs Prisma migrations on startup |
+| Cluster | 2 × Standard_D2s_v3 (2 vCPU, 8 GiB each) - node count may vary per team |
+| Backend init container | `db-migrate` - runs Prisma migrations on startup |
 | Backend env | `DATABASE_URL` sourced from Secret `postgres-secret` |
 
 > **Note:** The ACR registry name is team-specific: `<team-name-no-hyphens>acr.azurecr.io` (e.g., `kadchaosteam1acr.azurecr.io`). Replace `<team-acr>` with your team's registry name. You can find the actual image source via `kubectl describe pod -n oranje-markt <pod-name>` and checking the `Events` section for "Successfully pulled image".
 
 ---
 
-## Solution 1 — Explore the Environment & Define Steady State
+## Solution 1 - Explore the Environment & Define Steady State
 
 **What happens:** You familiarize yourself with the running application, its components, and define what "healthy" looks like before injecting any failures.
 
@@ -120,7 +120,7 @@ Write down your steady-state definition. Example:
 
 ---
 
-## Solution 2 — Kill a Pod (Self-Healing)
+## Solution 2 - Kill a Pod (Self-Healing)
 
 **What happens:** You delete the backend pod to see how Kubernetes self-healing works via the Deployment controller. The pod is recreated automatically, but there is a brief outage while the init container runs database migrations.
 
@@ -130,7 +130,7 @@ Write down your steady-state definition. Example:
 kubectl get pods -n oranje-markt -l app=backend -w
 ```
 
-Leave this running — it will live-stream pod status changes.
+Leave this running - it will live-stream pod status changes.
 
 ### Step 2: Form your hypothesis
 
@@ -189,13 +189,13 @@ While the backend is restarting, try loading the frontend. You should see failed
 >
 > **How would 3 replicas change the outcome?**
 >
-> With 3 replicas, deleting one pod causes **zero downtime** — traffic is routed to the remaining 2 pods while the replacement starts. This is the simplest resilience improvement you can make.
+> With 3 replicas, deleting one pod causes **zero downtime** - traffic is routed to the remaining 2 pods while the replacement starts. This is the simplest resilience improvement you can make.
 
 ---
 
-## Solution 3 — Kill the Database
+## Solution 3 - Kill the Database
 
-**What happens:** You delete the PostgreSQL pod to observe a cascading failure — the backend loses its database connection and starts returning errors. The StatefulSet controller recreates the pod, and data survives thanks to the PVC.
+**What happens:** You delete the PostgreSQL pod to observe a cascading failure - the backend loses its database connection and starts returning errors. The StatefulSet controller recreates the pod, and data survives thanks to the PVC.
 
 ### Step 1: Form your hypothesis
 
@@ -255,11 +255,11 @@ kubectl exec -n oranje-markt postgres-0 -- `
   psql -U oranje -d oranjedb -c 'SELECT count(*) FROM "Product";'
 ```
 
-**Expected:** The row count is the same as before — data survived because the PVC (`postgres-data`) persists independently of the pod.
+**Expected:** The row count is the same as before - data survived because the PVC (`postgres-data`) persists independently of the pod.
 
 ### Step 7: (Bonus) Delete the PVC
 
-> ⚠️ **This destroys all data — only do this if you understand the consequences.**
+> ⚠️ **This destroys all data - only do this if you understand the consequences.**
 
 ```powershell
 kubectl delete pvc postgres-data -n oranje-markt
@@ -275,7 +275,7 @@ kubectl apply -f infra/k8s/postgres/pvc.yaml
 kubectl delete pod -n oranje-markt postgres-0
 ```
 
-After recreation the database will be **empty** — all data is lost. Re-run migrations by restarting the backend:
+After recreation the database will be **empty** - all data is lost. Re-run migrations by restarting the backend:
 
 ```powershell
 kubectl rollout restart deployment/backend -n oranje-markt
@@ -285,16 +285,16 @@ kubectl rollout restart deployment/backend -n oranje-markt
 
 > **Why is running PostgreSQL as a StatefulSet risky for production?**
 >
-> - **Single point of failure** — only 1 replica, no replication
-> - **No automated backups** — PVC deletion = total, permanent data loss
-> - **No point-in-time recovery** — can't roll back to a specific moment
-> - **No high availability** — pod restart means database downtime
+> - **Single point of failure** - only 1 replica, no replication
+> - **No automated backups** - PVC deletion = total, permanent data loss
+> - **No point-in-time recovery** - can't roll back to a specific moment
+> - **No high availability** - pod restart means database downtime
 >
-> **Production recommendation:** Use **Azure Database for PostgreSQL Flexible Server** — a managed service with built-in HA, automated backups, geo-replication, and point-in-time restore.
+> **Production recommendation:** Use **Azure Database for PostgreSQL Flexible Server** - a managed service with built-in HA, automated backups, geo-replication, and point-in-time restore.
 
 ---
 
-## Solution 4 — Simulate Network Disruption
+## Solution 4 - Simulate Network Disruption
 
 **What happens:** You simulate a network partition between the backend and database by changing the `DATABASE_URL` to an unreachable host. The backend will fail to connect and enter a degraded state.
 
@@ -307,14 +307,14 @@ kubectl get deployment backend -n oranje-markt `
 
 The `DATABASE_URL` is most likely sourced from the Secret `postgres-secret` via `secretKeyRef`. Note the current configuration so you can restore it.
 
-### Step 2: Break the connection — point to a wrong host
+### Step 2: Break the connection - point to a wrong host
 
 ```powershell
 kubectl set env deployment/backend -n oranje-markt `
   DATABASE_URL="postgresql://oranje:oranje123@wrong-db-host:5432/oranjedb"
 ```
 
-This triggers a rolling update — Kubernetes creates a new pod with the wrong `DATABASE_URL`.
+This triggers a rolling update - Kubernetes creates a new pod with the wrong `DATABASE_URL`.
 
 > **Note:** The `DATABASE_URL` is normally sourced from a Kubernetes Secret (`postgres-secret`) via `valueFrom.secretKeyRef`. Using `kubectl set env` replaces the secret reference with a literal value. When you run `kubectl rollout undo`, it restores the original secret reference.
 
@@ -330,7 +330,7 @@ kubectl logs -n oranje-markt -l app=backend -f
 
 **Expected:** The new backend pod will fail to connect to the database. The init container `db-migrate` will fail (Prisma can't run migrations against a non-existent host), putting the pod into `Init:Error` or `CrashLoopBackOff`.
 
-> **Note:** The `db-migrate` init container has built-in retry logic (up to 15 attempts with 2s delay). The pod will stay in `Init:0/1` for up to ~30 seconds before transitioning to `Init:Error` and eventually `CrashLoopBackOff`. Be patient — the error is not immediate.
+> **Note:** The `db-migrate` init container has built-in retry logic (up to 15 attempts with 2s delay). The pod will stay in `Init:0/1` for up to ~30 seconds before transitioning to `Init:Error` and eventually `CrashLoopBackOff`. Be patient - the error is not immediate.
 
 ```
 backend-yyyyy   0/1     Init:0/1          0     0s
@@ -340,7 +340,7 @@ backend-yyyyy   0/1     Init:CrashLoopBackOff   0     25s
 
 ### Step 4: Check the frontend
 
-Browse the app — API calls fail, products don't load, errors are displayed.
+Browse the app - API calls fail, products don't load, errors are displayed.
 
 ### Step 5: Restore the connection
 
@@ -372,17 +372,17 @@ backend-xxxxxxxxx-xxxxx     1/1     Running   0          30s
 
 > **How should applications handle connectivity failures?**
 >
-> - **Retries with exponential backoff** — don't hammer the failing service; wait progressively longer between retries.
-> - **Circuit breakers** — stop sending requests to a failing dependency after repeated failures; periodically check if it has recovered.
-> - **Connection pooling** — reuse connections and handle reconnects automatically (Prisma's connection pool does this).
-> - **Health endpoints** — `/api/health` should check downstream dependencies (database, caches) and report accurately.
-> - **Graceful degradation** — serve cached data or a reduced-functionality experience instead of a full error page.
+> - **Retries with exponential backoff** - don't hammer the failing service; wait progressively longer between retries.
+> - **Circuit breakers** - stop sending requests to a failing dependency after repeated failures; periodically check if it has recovered.
+> - **Connection pooling** - reuse connections and handle reconnects automatically (Prisma's connection pool does this).
+> - **Health endpoints** - `/api/health` should check downstream dependencies (database, caches) and report accurately.
+> - **Graceful degradation** - serve cached data or a reduced-functionality experience instead of a full error page.
 
 ---
 
-## Solution 5 — Drain a Node
+## Solution 5 - Drain a Node
 
-**What happens:** You simulate a node going down for maintenance by draining it. All pods on that node are evicted and rescheduled to remaining nodes — but without Pod Disruption Budgets (PDBs), everything is evicted at once, potentially causing a full outage.
+**What happens:** You simulate a node going down for maintenance by draining it. All pods on that node are evicted and rescheduled to remaining nodes - but without Pod Disruption Budgets (PDBs), everything is evicted at once, potentially causing a full outage.
 
 ### Step 1: Check pod placement
 
@@ -399,7 +399,7 @@ frontend-xxxxx              1/1     Running   0          15m   10.x.x.2     aks-
 postgres-0                  1/1     Running   0          15m   10.x.x.3     aks-nodepool1-xxxxx-vmss000000
 ```
 
-Note which node runs each pod — if multiple pods are on the same node, draining that node will disrupt all of them simultaneously.
+Note which node runs each pod - if multiple pods are on the same node, draining that node will disrupt all of them simultaneously.
 
 ### Step 2: Pick a node and drain it
 
@@ -412,7 +412,7 @@ Write-Host "Draining node: $NODE"
 kubectl drain $NODE --ignore-daemonsets --delete-emptydir-data --grace-period=30
 ```
 
-> **Note:** AKS system components (coredns, metrics-server, konnectivity-agent) have their own PDBs. The drain command may take 2+ minutes as it retries evictions for these system pods. This is normal — be patient.
+> **Note:** AKS system components (coredns, metrics-server, konnectivity-agent) have their own PDBs. The drain command may take 2+ minutes as it retries evictions for these system pods. This is normal - be patient.
 
 ### Step 3: Observe rescheduling
 
@@ -432,8 +432,8 @@ kubectl describe pod -n oranje-markt <pending-pod-name>
 
 Common causes:
 - Not enough resources on remaining nodes (each node has only 2 vCPU / 8 GiB)
-- PVC affinity — `postgres-0`'s PVC may be bound to a specific availability zone
-- Single-node cluster — if there is only 1 node, all evicted pods stay `Pending` (see [Common Issues](#common-issues))
+- PVC affinity - `postgres-0`'s PVC may be bound to a specific availability zone
+- Single-node cluster - if there is only 1 node, all evicted pods stay `Pending` (see [Common Issues](#common-issues))
 
 ### Step 5: Uncordon the node
 
@@ -456,18 +456,18 @@ All nodes should show `Ready` and all pods should be `Running` with `READY 1/1`.
 >
 > | Action | What it does | Use case |
 > |--------|-------------|----------|
-> | `cordon` | Marks node as unschedulable — **existing pods keep running**, but no new pods are placed on it | Preparing for future maintenance; want to stop new workloads without disrupting current ones |
+> | `cordon` | Marks node as unschedulable - **existing pods keep running**, but no new pods are placed on it | Preparing for future maintenance; want to stop new workloads without disrupting current ones |
 > | `drain` | Evicts all pods AND cordons the node | Active maintenance or decommissioning a node |
 >
 > **How do PDBs help?**
 >
-> Without PDBs, `kubectl drain` evicts all pods at once — if your backend, frontend, and database are on the same node, all go down simultaneously.
+> Without PDBs, `kubectl drain` evicts all pods at once - if your backend, frontend, and database are on the same node, all go down simultaneously.
 >
 > With a PDB like `minAvailable: 1`, Kubernetes evicts pods **one at a time**, waiting for each replacement to be Running before evicting the next. This guarantees minimum availability during planned disruptions (like node drains, cluster upgrades, or AKS node pool scaling).
 
 ---
 
-## Solution 6 — Load Test to Breaking Point
+## Solution 6 - Load Test to Breaking Point
 
 **What happens:** You generate increasing load against the backend API to find the application's breaking point. By scaling up the number of concurrent clients, you identify which resource (CPU, memory, connections) saturates first.
 
@@ -510,8 +510,8 @@ kubectl get events -n oranje-markt --field-selector type=Warning
 ```
 
 Look for these warning signs:
-- `OOMKilled` — pod exceeded memory limits
-- `Evicted` — node ran out of resources
+- `OOMKilled` - pod exceeded memory limits
+- `Evicted` - node ran out of resources
 - Backend logs showing 5xx errors or timeouts
 - CPU throttling (CPU usage pinned at the limit)
 
@@ -538,7 +538,7 @@ kubectl delete pod -n oranje-markt -l chaos=load-test --ignore-not-found
 
 > **What is the most common bottleneck?**
 >
-> Usually **CPU on the backend** — a single pod with a `500m` limit (half a core) can only handle so many concurrent requests before being throttled. After CPU saturation, request latency spikes, connections queue up, and eventually the health check fails.
+> Usually **CPU on the backend** - a single pod with a `500m` limit (half a core) can only handle so many concurrent requests before being throttled. After CPU saturation, request latency spikes, connections queue up, and eventually the health check fails.
 >
 > **How would HPA help?**
 >
@@ -548,12 +548,12 @@ kubectl delete pod -n oranje-markt -l chaos=load-test --ignore-not-found
 >
 > | Setting | Purpose | Effect |
 > |---------|---------|--------|
-> | `requests` | Guaranteed minimum resources | Affects **scheduling** — the pod is placed on a node with this much free capacity |
-> | `limits` | Maximum allowed resources | Affects **runtime** — pod is throttled (CPU) or OOMKilled (memory) if it exceeds this |
+> | `requests` | Guaranteed minimum resources | Affects **scheduling** - the pod is placed on a node with this much free capacity |
+> | `limits` | Maximum allowed resources | Affects **runtime** - pod is throttled (CPU) or OOMKilled (memory) if it exceeds this |
 
 ---
 
-## Solution 7 — Cleanup
+## Solution 7 - Cleanup
 
 **What happens:** You restore the cluster to its original state, cleaning up all artifacts from the experiments.
 
@@ -578,10 +578,10 @@ kubectl get nodes -o jsonpath='{.items[*].metadata.name}' | `
 $secretRef = kubectl get deployment backend -n oranje-markt `
   -o jsonpath='{.spec.template.spec.containers[0].env[0].valueFrom.secretKeyRef.name}' 2>$null
 if (-not $secretRef) {
-  Write-Host "DATABASE_URL is a literal value — rolling back to secret-based config"
+  Write-Host "DATABASE_URL is a literal value - rolling back to secret-based config"
   kubectl rollout undo deployment/backend -n oranje-markt
 } else {
-  Write-Host "DATABASE_URL is already using secretKeyRef ($secretRef) — no rollback needed"
+  Write-Host "DATABASE_URL is already using secretKeyRef ($secretRef) - no rollback needed"
 }
 ```
 
@@ -627,13 +627,13 @@ All pods `Running`, `READY 1/1`, 0 recent restarts. All nodes `Ready`. ✅
 
 | Challenge | Blast Radius | Recovery Method | Key Takeaway |
 |-----------|-------------|-----------------|--------------|
-| 1 — Steady State | None | N/A | Always baseline before experimenting |
-| 2 — Kill Pod | 1 pod | Automatic (Deployment controller) | Self-healing works; add replicas for zero downtime |
-| 3 — Kill Database | Full app (cascading) | Automatic (StatefulSet + PVC) | PVC = data survives; no PVC = data lost |
-| 4 — Network Disruption | Backend → DB link | `rollout undo` | Apps need retries, circuit breakers, graceful degradation |
-| 5 — Drain Node | All pods on node | `uncordon` + reschedule | PDBs prevent simultaneous eviction |
-| 6 — Load Test | Performance degradation | Delete load pods | Know your limits; use HPA and proper resource settings |
-| 7 — Cleanup | N/A | Manual restoration | Always clean up after experiments |
+| 1 - Steady State | None | N/A | Always baseline before experimenting |
+| 2 - Kill Pod | 1 pod | Automatic (Deployment controller) | Self-healing works; add replicas for zero downtime |
+| 3 - Kill Database | Full app (cascading) | Automatic (StatefulSet + PVC) | PVC = data survives; no PVC = data lost |
+| 4 - Network Disruption | Backend → DB link | `rollout undo` | Apps need retries, circuit breakers, graceful degradation |
+| 5 - Drain Node | All pods on node | `uncordon` + reschedule | PDBs prevent simultaneous eviction |
+| 6 - Load Test | Performance degradation | Delete load pods | Know your limits; use HPA and proper resource settings |
+| 7 - Cleanup | N/A | Manual restoration | Always clean up after experiments |
 
 ---
 
@@ -641,7 +641,7 @@ All pods `Running`, `READY 1/1`, 0 recent restarts. All nodes `Ready`. ✅
 
 Issues you may encounter during the lab and how to resolve them.
 
-### Single-node cluster — drain always times out
+### Single-node cluster - drain always times out
 
 If your cluster has only 1 node (check with `kubectl get nodes`), draining that node means there is **no other node** to reschedule pods to. All evicted pods will stay `Pending` indefinitely.
 
@@ -660,9 +660,9 @@ If `DATABASE_URL` is already using `secretKeyRef`, no rollback is needed.
 
 ### Duplicate promtail pods after drain
 
-After draining and uncordoning a node, the `promtail` DaemonSet may temporarily create a second pod. This is normal — the DaemonSet controller ensures exactly one pod per node, and the extra pod will be terminated automatically.
+After draining and uncordoning a node, the `promtail` DaemonSet may temporarily create a second pod. This is normal - the DaemonSet controller ensures exactly one pod per node, and the extra pod will be terminated automatically.
 
-### PVC zone affinity — postgres-0 stuck in Pending
+### PVC zone affinity - postgres-0 stuck in Pending
 
 After draining a node, `postgres-0` may get stuck in `Pending` if its PVC (`postgres-data`) is bound to a specific availability zone and the remaining node(s) are in a different zone. Azure Managed Disks are zone-specific.
 

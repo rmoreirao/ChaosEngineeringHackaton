@@ -61,14 +61,14 @@ foreach ($team in $teams) {
 
     # Per-team naming. `rgName` and `resourcesSuffix` are required fields in
     # teams.json. `resourcesSuffix` must be short (<= ~20 chars, alphanumeric
-    # preferred) because it drives AKS/ACR/identity names — long suffixes
+    # preferred) because it drives AKS/ACR/identity names - long suffixes
     # break the AKS node-resource-group 80-char limit and the 50-char ACR
     # name limit. Fall back to legacy derivation when absent for back-compat.
     $rgName = if ($team.PSObject.Properties['rgName'] -and $team.rgName) { $team.rgName } else { "rg-$name" }
     $resourcesSuffix = if ($team.PSObject.Properties['resourcesSuffix'] -and $team.resourcesSuffix) { $team.resourcesSuffix } else { ($name -replace '-', '') }
 
     if ($resourcesSuffix.Length -gt 20 -or $resourcesSuffix -notmatch '^[a-zA-Z0-9]+$') {
-        Write-Warning "resourcesSuffix '$resourcesSuffix' for team '$name' is longer than 20 chars or contains non-alphanumeric characters — AKS/ACR name limits may be exceeded."
+        Write-Warning "resourcesSuffix '$resourcesSuffix' for team '$name' is longer than 20 chars or contains non-alphanumeric characters - AKS/ACR name limits may be exceeded."
     }
 
     # Derived resource names (must match what main.bicep / modules produce):
@@ -94,7 +94,7 @@ foreach ($team in $teams) {
     # only succeed when the caller has subscription-level permissions.
     $rgExists = az group exists --name $rgName --output tsv
     if ($rgExists -ne "true") {
-        Write-Host "  Resource group '$rgName' not found — attempting to create it..."
+        Write-Host "  Resource group '$rgName' not found - attempting to create it..."
         az group create --name $rgName --location $defaults.location --output none
         if ($LASTEXITCODE -ne 0) {
             Write-Error "Failed to create resource group '$rgName'. If you only have RG-scoped access, ask a subscription owner to pre-create it, then re-run this script."
@@ -131,7 +131,7 @@ foreach ($team in $teams) {
         --output none
 
     if ($LASTEXITCODE -ne 0) {
-        Write-Warning "ACR attach may have failed for $name — continuing"
+        Write-Warning "ACR attach may have failed for $name - continuing"
     }
     Write-Host "  ACR attached." -ForegroundColor DarkGreen
 
@@ -140,19 +140,19 @@ foreach ($team in $teams) {
 
     $acrLoginServer = az acr show --name $acrName --query loginServer --output tsv
     if ($LASTEXITCODE -ne 0) {
-        Write-Error "Failed to retrieve ACR login server for $acrName — verify the ACR exists in resource group $rgName"
+        Write-Error "Failed to retrieve ACR login server for $acrName - verify the ACR exists in resource group $rgName"
         continue
     }
 
     Write-Host "  Logging in to ACR ($acrLoginServer)..."
     $acrToken = az acr login --name $acrName --expose-token --query accessToken --output tsv
     if ($LASTEXITCODE -ne 0) {
-        Write-Error "ACR login failed for $name — ensure you have AcrPush permissions"
+        Write-Error "ACR login failed for $name - ensure you have AcrPush permissions"
         continue
     }
     $acrToken | docker login $acrLoginServer -u 00000000-0000-0000-0000-000000000000 --password-stdin
     if ($LASTEXITCODE -ne 0) {
-        Write-Error "Docker login to ACR failed for $name — ensure Docker Desktop is running"
+        Write-Error "Docker login to ACR failed for $name - ensure Docker Desktop is running"
         continue
     }
 
@@ -229,10 +229,10 @@ foreach ($team in $teams) {
         if ($LASTEXITCODE -eq 0) {
             Write-Host "  RBAC role assigned." -ForegroundColor DarkGreen
         } else {
-            Write-Warning "  RBAC assignment may already exist or failed — continuing"
+            Write-Warning "  RBAC assignment may already exist or failed - continuing"
         }
     } else {
-        Write-Warning "  Could not resolve AKS id or current user id — skipping RBAC assignment"
+        Write-Warning "  Could not resolve AKS id or current user id - skipping RBAC assignment"
     }
 
     # --- Step 5: Deploy K8s manifests ---

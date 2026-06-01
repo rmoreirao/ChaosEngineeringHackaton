@@ -9,7 +9,7 @@ export function middleware(req: NextRequest) {
     return response;
   }
 
-  // Track SSR request timing via header — picked up by report-metrics
+  // Track SSR request timing via header - picked up by report-metrics
   response.headers.set('x-ssr-route', route);
   response.headers.set('x-ssr-start', Date.now().toString());
 

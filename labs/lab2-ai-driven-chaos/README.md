@@ -1,8 +1,8 @@
-# Lab 2 — AI-Driven Chaos Experiments
+# Lab 2 - AI-Driven Chaos Experiments
 
 ## Objective
 
-Use GenAI tools to guide you through the **complete chaos engineering lifecycle** — from risk analysis to experiment execution to results analysis. Instead of manually crafting each step, you'll use GitHub Copilot and GitHub Copilot CLI as your co-pilot throughout the process.
+Use GenAI tools to guide you through the **complete chaos engineering lifecycle** - from risk analysis to experiment execution to results analysis. Instead of manually crafting each step, you'll use GitHub Copilot and GitHub Copilot CLI as your co-pilot throughout the process.
 
 By the end of this lab you will:
 
@@ -10,7 +10,7 @@ By the end of this lab you will:
 - Generate **testable hypotheses** from the FMA using AI
 - Use AI to **define steady-state metrics** and generate monitoring/verification scripts
 - Use AI to **plan and generate chaos experiments** (disruption scripts)
-- Use AI to **observe and analyze experiment results** — producing structured experiment reports
+- Use AI to **observe and analyze experiment results** - producing structured experiment reports
 - Understand how context engineering improves AI output at every phase
 
 ## The Chaos Engineering Lifecycle
@@ -32,7 +32,7 @@ This lab follows the structured chaos engineering process:
 │  │  Instrument, measure, establish baselines                   │    │
 │  │                          ↓                                  │    │
 │  │  2.2 Plan & Introduce Disruptions                           │    │
-│  │  Inject the failure — this is the chaos experiment          │    │
+│  │  Inject the failure - this is the chaos experiment          │    │
 │  │                          ↓                                  │    │
 │  │  2.3 Observe Effects                                        │    │
 │  │  Monitor, compare to steady state, analyze                  │    │
@@ -59,9 +59,9 @@ This lab follows the structured chaos engineering process:
 > - Alternatively, run bash scripts inside a pod: `kubectl run -it --rm shell --image=busybox -- /bin/sh`
 
 > **🤖 Where to run Copilot prompts:** Use any of these tools depending on the task:
-> - **VS Code Copilot Chat** (sidebar) — best for longer prompts, pasting YAML context, and analysis
-> - **VS Code Agent Mode** (terminal integration) — best for autonomous execution (Extra Challenge)
-> - **Copilot CLI**  — best for quick command-line questions
+> - **VS Code Copilot Chat** (sidebar) - best for longer prompts, pasting YAML context, and analysis
+> - **VS Code Agent Mode** (terminal integration) - best for autonomous execution (Extra Challenge)
+> - **Copilot CLI**  - best for quick command-line questions
 
 ## Reference Documentation
 
@@ -72,7 +72,7 @@ This lab follows the structured chaos engineering process:
 
 ---
 
-## Challenge 1 — Failure Mode Analysis (Phase 0)
+## Challenge 1 - Failure Mode Analysis (Phase 0)
 
 **Goal:** Use GenAI to perform a **Failure Mode Analysis (FMA)** on the Oranje Markt architecture. Identify what can go wrong, assess the risk, impact, and probability of each failure mode.
 
@@ -110,9 +110,9 @@ This lab follows the structured chaos engineering process:
    Format as a markdown table sorted by risk score (highest first).
    ```
 
-3. Review the AI-generated FMA table. Add or remove entries based on your Lab 1 experience — you already broke some of these things!
+3. Review the AI-generated FMA table. Add or remove entries based on your Lab 1 experience - you already broke some of these things!
 
-4. **Pick your top 3 failure modes** — these will be the experiments you run in the rest of this lab.
+4. **Pick your top 3 failure modes** - these will be the experiments you run in the rest of this lab.
 
 **What to observe:**
 - Does Copilot identify the same weaknesses you discovered in Lab 1?
@@ -128,7 +128,7 @@ This lab follows the structured chaos engineering process:
 
 ---
 
-## Challenge 2 — Generate Hypotheses (Phase 1)
+## Challenge 2 - Generate Hypotheses (Phase 1)
 
 **Goal:** For each of your top 3 failure modes from Challenge 1, use GenAI to generate **testable chaos engineering hypotheses**.
 
@@ -153,7 +153,7 @@ This lab follows the structured chaos engineering process:
    - Rollback plan: how to restore if things go wrong
    ```
 
-2. Review each hypothesis — are they specific enough to test? Do the success criteria have measurable thresholds?
+2. Review each hypothesis - are they specific enough to test? Do the success criteria have measurable thresholds?
 
 3. **Select 1-2 hypotheses** to execute in the remaining challenges. Choose ones you can complete in the available time.
 
@@ -180,9 +180,9 @@ This lab follows the structured chaos engineering process:
 
 ---
 
-## Challenge 3 — Define & Verify Steady State (Phase 2.1)
+## Challenge 3 - Define & Verify Steady State (Phase 2.1)
 
-**Goal:** Before injecting chaos, use GenAI to **define the steady state** — the measurable indicators that represent normal system behavior. Generate monitoring queries and verification scripts.
+**Goal:** Before injecting chaos, use GenAI to **define the steady state** - the measurable indicators that represent normal system behavior. Generate monitoring queries and verification scripts.
 
 **Why this matters:** You can't measure the impact of chaos if you don't know what "normal" looks like. All logging and monitoring should be defined as code and be part of the solution.
 
@@ -230,7 +230,7 @@ This lab follows the structured chaos engineering process:
    kubectl exec -n oranje-markt deploy/frontend -- wget -q -O- http://backend:4000/api/health
    ```
 
-5. **Document your steady state** — write down the baseline values. You'll compare against these after the experiment.
+5. **Document your steady state** - write down the baseline values. You'll compare against these after the experiment.
 
 **What to observe:**
 - Does Copilot generate realistic thresholds for your cluster size?
@@ -238,7 +238,7 @@ This lab follows the structured chaos engineering process:
 - Does the baseline script capture enough information to detect changes after disruption?
 
 **Hints:**
-- Steady state is not just "pods are running" — it includes response times, error rates, throughput
+- Steady state is not just "pods are running" - it includes response times, error rates, throughput
 - Use `kubectl top` for real-time resource data
 - Port-forward Grafana and run the PromQL queries in the Explore tab
 - The steady state should be verifiable in under 30 seconds (keep it practical)
@@ -247,11 +247,11 @@ This lab follows the structured chaos engineering process:
 
 ---
 
-## Challenge 4 — Plan & Introduce Disruptions (Phase 2.2)
+## Challenge 4 - Plan & Introduce Disruptions (Phase 2.2)
 
 **Goal:** Use GenAI to **generate the chaos experiment scripts** for your selected hypotheses. Run the disruption and capture what happens.
 
-**Why this matters:** This is the heart of chaos engineering — injecting a controlled failure into the system. The experiment should be specific, time-bounded, and reversible.
+**Why this matters:** This is the heart of chaos engineering - injecting a controlled failure into the system. The experiment should be specific, time-bounded, and reversible.
 
 **Requirements:**
 
@@ -283,7 +283,7 @@ This lab follows the structured chaos engineering process:
    - Start your monitoring (Grafana dashboard, `kubectl get pods -w` in a separate terminal)
    - Execute the disruption script
    - Let it run for the defined duration
-   - Do NOT intervene — observe what happens naturally
+   - Do NOT intervene - observe what happens naturally
 
 4. If you have time, run a second experiment for a different hypothesis.
 
@@ -297,15 +297,15 @@ This lab follows the structured chaos engineering process:
 - Always have a rollback plan ready before starting
 - Run `kubectl get pods -n oranje-markt -w` in a separate terminal to watch pod lifecycle
 - Keep Grafana open on the relevant dashboard
-- Time the disruption — note when you injected and when recovery completed
+- Time the disruption - note when you injected and when recovery completed
 
-> **⚠️ Cascading Failure:** When postgres is down, the backend health endpoint returns 503. Since the **liveness probe** uses this same endpoint, Kubernetes will restart the backend pod after 3 consecutive failures (~30s). This is a cascading failure worth documenting — it extends the total outage beyond the database recovery time alone.
+> **⚠️ Cascading Failure:** When postgres is down, the backend health endpoint returns 503. Since the **liveness probe** uses this same endpoint, Kubernetes will restart the backend pod after 3 consecutive failures (~30s). This is a cascading failure worth documenting - it extends the total outage beyond the database recovery time alone.
 
 > **Discussion:** What safety guardrails should be in place before running chaos experiments in a real environment? How would you implement an "emergency stop" for automated chaos experiments?
 
 ---
 
-## Challenge 5 — Observe & Analyze Results (Phase 2.3)
+## Challenge 5 - Observe & Analyze Results (Phase 2.3)
 
 **Goal:** Use GenAI to **analyze the results** of your chaos experiment. Produce a structured experiment report that documents findings.
 
@@ -354,9 +354,9 @@ This lab follows the structured chaos engineering process:
    7. Risk re-assessment: based on this experiment, should the risk score from the FMA be updated?
    ```
 
-3. Review the AI-generated report. Add your own observations — things the AI might have missed.
+3. Review the AI-generated report. Add your own observations - things the AI might have missed.
 
-4. **Share your findings** — you'll present these in the wrap-up session.
+4. **Share your findings** - you'll present these in the wrap-up session.
 
 **What to observe:**
 - Does Copilot correctly determine if the hypothesis was confirmed or disproven?
@@ -365,22 +365,22 @@ This lab follows the structured chaos engineering process:
 - How does the quality of input data affect the quality of the analysis?
 
 **Hints:**
-- The more structured your input, the better the report — use the format above
+- The more structured your input, the better the report - use the format above
 - Include timestamps if possible (helps with timeline reconstruction)
 - Screenshots of Grafana dashboards during the experiment are valuable
 - Compare the AI's recommendations with Lab 3's resilience improvements
-- If the hypothesis was disproven, that's a valuable finding — document _why_ the system behaved differently than expected
-- Use `--tail=50` and `--since=5m` to scope data to the experiment window — pasting thousands of log lines reduces analysis quality and may hit AI context limits
+- If the hypothesis was disproven, that's a valuable finding - document _why_ the system behaved differently than expected
+- Use `--tail=50` and `--since=5m` to scope data to the experiment window - pasting thousands of log lines reduces analysis quality and may hit AI context limits
 
 > **Discussion:** How does analyzing chaos experiment results feed back into the Failure Mode Analysis? Why is it important to document experiments even when the system behaves as expected?
 
 ---
 
-## Extra Challenge — Autonomous Experiment Execution 🤖
+## Extra Challenge - Autonomous Experiment Execution 🤖
 
 > ⚠️ **DISCLAIMER:** This challenge is intended for **workshop and educational environments only**. Do **NOT** use autonomous AI-driven chaos experiment execution in production environments. Automated fault injection without proper human oversight, approval gates, and safety mechanisms can cause unintended outages, data loss, or cascading failures. Always follow your organization's change management and incident response policies before running chaos experiments in any non-sandbox environment.
 
-**Goal:** Instead of manually orchestrating each phase of the chaos experiment (Challenges 3–5), craft a **single prompt** that asks GitHub Copilot to **autonomously execute the entire experiment lifecycle** — from steady-state capture to disruption injection to results analysis — and produce a complete experiment report.
+**Goal:** Instead of manually orchestrating each phase of the chaos experiment (Challenges 3–5), craft a **single prompt** that asks GitHub Copilot to **autonomously execute the entire experiment lifecycle** - from steady-state capture to disruption injection to results analysis - and produce a complete experiment report.
 
 **Prerequisites:**
 - Completed Challenges 1 and 2 (you need a hypothesis to execute)
@@ -400,7 +400,7 @@ This lab follows the structured chaos engineering process:
    Example mega-prompt template:
    ```
    You are a chaos engineering agent. Execute the following experiment AUTONOMOUSLY
-   — run each step, capture the output, and produce a final report.
+   - run each step, capture the output, and produce a final report.
 
    HYPOTHESIS: [paste your hypothesis from Challenge 2]
 
@@ -413,30 +413,30 @@ This lab follows the structured chaos engineering process:
 
    EXECUTE THESE PHASES IN ORDER:
 
-   Phase 1 — Capture Steady State:
+   Phase 1 - Capture Steady State:
    - Run: kubectl get pods -n oranje-markt -o wide
    - Run: kubectl top pods -n oranje-markt
    - Test backend health: kubectl exec deploy/frontend -n oranje-markt -- wget -q -O- http://backend:4000/api/health
    - Test database: kubectl exec postgres-0 -n oranje-markt -- pg_isready -U oranje
    - Save all output as the "BEFORE" baseline
 
-   Phase 2 — Inject Failure:
+   Phase 2 - Inject Failure:
    - Record the exact timestamp
    - Execute the disruption: [e.g., kubectl delete pod -n oranje-markt postgres-0]
-   - Do NOT intervene after injection — let the system respond naturally
+   - Do NOT intervene after injection - let the system respond naturally
 
-   Phase 3 — Monitor Recovery:
+   Phase 3 - Monitor Recovery:
    - Poll every 5 seconds for up to 120 seconds
    - Each poll: check pod status, readiness, and health endpoint
    - Stop polling when the system recovers OR timeout is reached
 
-   Phase 4 — Capture Post-Experiment State:
+   Phase 4 - Capture Post-Experiment State:
    - Run: kubectl get pods -n oranje-markt -o wide
    - Run: kubectl get events -n oranje-markt --sort-by='.lastTimestamp' | tail -20   (PowerShell: | Select-Object -Last 20)
    - Run: kubectl describe pod -n oranje-markt -l app=backend
    - Run: kubectl logs -n oranje-markt -l app=backend --tail=30
 
-   Phase 5 — Analyze & Report:
+   Phase 5 - Analyze & Report:
    Produce a structured experiment report with:
    1. Hypothesis result: CONFIRMED or DISPROVEN (with evidence)
    2. Impact analysis: actual blast radius vs. predicted
@@ -450,11 +450,11 @@ This lab follows the structured chaos engineering process:
    - Only operate in namespace "oranje-markt"
    - Maximum experiment duration: 120 seconds
    - If recovery does not occur within 120 seconds, stop and report
-   - Do NOT delete deployments, statefulsets, or PVCs — only delete pods
+   - Do NOT delete deployments, statefulsets, or PVCs - only delete pods
    - Include rollback instructions in the report
    ```
 
-3. **Let Copilot execute the experiment.** Observe how it handles each phase — does it capture the right data? Does it wait appropriately? Does it analyze correctly?
+3. **Let Copilot execute the experiment.** Observe how it handles each phase - does it capture the right data? Does it wait appropriately? Does it analyze correctly?
 
 4. **Compare the results** with your manual execution from Challenges 3–5:
    - Was the autonomous report as thorough as the manual one?
@@ -468,17 +468,17 @@ This lab follows the structured chaos engineering process:
 - How does the quality of your mega-prompt affect the outcome? What context was most critical?
 
 **Hints:**
-- The more specific your mega-prompt, the better the autonomous execution — vague instructions lead to vague results
+- The more specific your mega-prompt, the better the autonomous execution - vague instructions lead to vague results
 - Include explicit safety constraints in the prompt (namespace scope, timeout, forbidden operations)
-- If Copilot asks for clarification mid-execution, note what it asked — that tells you what context was missing from your prompt
-- Try running the same experiment with different prompt variations — compare the results
+- If Copilot asks for clarification mid-execution, note what it asked - that tells you what context was missing from your prompt
+- Try running the same experiment with different prompt variations - compare the results
 - Context engineering matters: including the actual deployment YAML, node count, and resource limits significantly improves output quality
 
 > **Discussion:** What are the trade-offs between step-by-step AI-assisted chaos engineering (Challenges 3–5) vs. fully autonomous AI-driven execution (this challenge)? When would you trust an AI agent to run chaos experiments without human supervision? What guardrails would you require for autonomous chaos in production?
 
 ---
 
-## Challenge 6 — Cleanup
+## Challenge 6 - Cleanup
 
 Restore the environment after your experiments:
 
@@ -495,22 +495,22 @@ kubectl get pods -n oranje-markt
 kubectl top pods -n oranje-markt
 ```
 
-> ⚠️ **Do NOT** use `kubectl apply -f infra/k8s/backend/deployment.yaml` to restore — the raw YAML files reference a generic ACR that may not match your team's registry. Use `kubectl rollout restart` instead.
+> ⚠️ **Do NOT** use `kubectl apply -f infra/k8s/backend/deployment.yaml` to restore - the raw YAML files reference a generic ACR that may not match your team's registry. Use `kubectl rollout restart` instead.
 
 ---
 
-## Bonus — Diagnose Broken Deployments
+## Bonus - Diagnose Broken Deployments
 
 If you have extra time, try diagnosing these intentionally broken deployments using AI:
 
 ```bash
-# CrashLoopBackOff — wrong startup command
+# CrashLoopBackOff - wrong startup command
 kubectl apply -f labs/lab2-ai-driven-chaos/solutions/manifests/01-crashloop.yaml
 
-# ImagePullBackOff — wrong image tag
+# ImagePullBackOff - wrong image tag
 kubectl apply -f labs/lab2-ai-driven-chaos/solutions/manifests/02-imagepull.yaml
 
-# Pending — impossible resource requests
+# Pending - impossible resource requests
 kubectl apply -f labs/lab2-ai-driven-chaos/solutions/manifests/03-resource-constraint.yaml
 ```
 
@@ -524,17 +524,17 @@ For each: gather context (`kubectl describe pod`, `kubectl logs --previous`), pa
 |-------|------------------------------|
 | **Failure Mode Analysis** | AI can systematically identify risks from architecture context (YAML, diagrams), but domain expertise validates the output |
 | **Hypothesis Generation** | Good hypotheses have "if/then/because" structure with measurable success criteria |
-| **Steady-State Definition** | You can't measure chaos impact without a documented baseline — steady state should be defined as code |
+| **Steady-State Definition** | You can't measure chaos impact without a documented baseline - steady state should be defined as code |
 | **Disruption Planning** | AI generates experiment scripts quickly, but always review for safety before running |
 | **Results Analysis** | Structured experiment data + AI analysis = actionable reports with improvement recommendations |
 
 ## Key Takeaways
 
-1. **Follow the process**: FMA → Hypothesis → Steady State → Disrupt → Observe — skipping steps leads to random breakage, not chaos engineering
-2. **Context is everything**: Every AI interaction improves with better context — YAML, metrics, logs, architecture
+1. **Follow the process**: FMA → Hypothesis → Steady State → Disrupt → Observe - skipping steps leads to random breakage, not chaos engineering
+2. **Context is everything**: Every AI interaction improves with better context - YAML, metrics, logs, architecture
 3. **Hypotheses make experiments scientific**: Without a hypothesis, you're just breaking things. With one, you're learning.
-4. **Steady state is your anchor**: Define it before you break things, measure it after — the delta is your finding
-5. **Document everything**: Experiment reports are the lasting value — they inform resilience improvements in Lab 3
+4. **Steady state is your anchor**: Define it before you break things, measure it after - the delta is your finding
+5. **Document everything**: Experiment reports are the lasting value - they inform resilience improvements in Lab 3
 
 ---
 

@@ -350,14 +350,14 @@
             "principalId": {
               "type": "string",
               "metadata": {
-                "description": "The principal (object) ID — used for role assignments"
+                "description": "The principal (object) ID - used for role assignments"
               },
               "value": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('{0}-aks-identity', parameters('namePrefix'))), '2023-01-31').principalId]"
             },
             "clientId": {
               "type": "string",
               "metadata": {
-                "description": "The client (application) ID — used in workload identity configurations"
+                "description": "The client (application) ID - used in workload identity configurations"
               },
               "value": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('{0}-aks-identity', parameters('namePrefix'))), '2023-01-31').clientId]"
             }

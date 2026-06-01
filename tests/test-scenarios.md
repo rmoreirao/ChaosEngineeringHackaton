@@ -1,4 +1,4 @@
-# Oranje Markt — E2E Test Scenarios
+# Oranje Markt - E2E Test Scenarios
 
 > These scenarios validate the main user paths and are designed to also serve as **load test flows**.  
 > **Frontend**: http://localhost:3000 | **Backend API**: http://localhost:4000
@@ -81,7 +81,7 @@
 ## Load Testing Notes
 
 - **Scenario 1 + 2** are read-only and safe to run at high concurrency without side effects.
-- **Scenario 3** creates users — use unique emails per virtual user (e.g. append UUID).
-- **Scenario 4** creates orders — represents the full purchase funnel. Use to measure end-to-end latency under load.
-- **Scenario 5** is lightweight — useful for validating auth middleware performance.
+- **Scenario 3** creates users - use unique emails per virtual user (e.g. append UUID).
+- **Scenario 4** creates orders - represents the full purchase funnel. Use to measure end-to-end latency under load.
+- **Scenario 5** is lightweight - useful for validating auth middleware performance.
 - Recommended load mix: **60% browsing (S1+S2)**, **10% registration (S3)**, **25% purchase (S4)**, **5% auth redirect (S5)**.

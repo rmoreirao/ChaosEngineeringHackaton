@@ -4,7 +4,7 @@
 
 # Oranje Markt
 
-A full-stack Dutch specialty e-commerce application built for the Chaos Engineering Hackathon. Browse authentic Dutch products — from Gouda cheese and stroopwafels to tulips and Delft Blue pottery — with a complete shopping experience including user authentication, shopping cart, checkout, and order history.
+A full-stack Dutch specialty e-commerce application built for the Chaos Engineering Hackathon. Browse authentic Dutch products - from Gouda cheese and stroopwafels to tulips and Delft Blue pottery - with a complete shopping experience including user authentication, shopping cart, checkout, and order history.
 
 ## Architecture
 
@@ -25,11 +25,11 @@ A full-stack Dutch specialty e-commerce application built for the Chaos Engineer
 └──────────────────────────────────────────────────────┘
 ```
 
-**Frontend** — Server-rendered React app (Next.js 16) with Tailwind CSS 4.
+**Frontend** - Server-rendered React app (Next.js 16) with Tailwind CSS 4.
 
-**Backend** — REST API (Express.js + TypeScript) handling authentication, products, categories, and orders. Uses JWT tokens and Prisma ORM.
+**Backend** - REST API (Express.js + TypeScript) handling authentication, products, categories, and orders. Uses JWT tokens and Prisma ORM.
 
-**Database** — PostgreSQL 16 storing users, products, categories, and orders. Auto-migrated and seeded on startup.
+**Database** - PostgreSQL 16 storing users, products, categories, and orders. Auto-migrated and seeded on startup.
 
 ## Project Structure
 
@@ -113,7 +113,7 @@ npm run dev
 | Service              | URL                          | Credentials              |
 |----------------------|------------------------------|--------------------------|
 | **Frontend**         | http://localhost:3000         | Register a new account   |
-| **Backend API**      | http://localhost:4000         | —                        |
+| **Backend API**      | http://localhost:4000         | -                        |
 | **PostgreSQL**       | `localhost:5432`             | `oranje` / `oranje123` (db: `oranjedb`) |
 
 ### Quick Health Check
@@ -212,14 +212,14 @@ npx tsx load/load-test.ts --scenario=browse --users=5 --duration=60
 | `--duration` | `60` | Test duration in seconds |
 
 **Recommended load mix:**
-- 60% browsing (`browse` + `search`) — read-only, safe at high concurrency
-- 10% registration (`register`) — creates users, use unique emails per run
-- 25% purchase (`checkout`) — full purchase funnel, measures end-to-end latency
-- 5% auth redirect (`unauth`) — lightweight auth middleware check
+- 60% browsing (`browse` + `search`) - read-only, safe at high concurrency
+- 10% registration (`register`) - creates users, use unique emails per run
+- 25% purchase (`checkout`) - full purchase funnel, measures end-to-end latency
+- 5% auth redirect (`unauth`) - lightweight auth middleware check
 
 ## Traffic Generator
 
-A containerized, continuously running traffic generator that uses the same Playwright scenario flows to produce realistic website traffic. Ideal for chaos engineering experiments — it generates steady-state traffic so faults can be injected and observed.
+A containerized, continuously running traffic generator that uses the same Playwright scenario flows to produce realistic website traffic. Ideal for chaos engineering experiments - it generates steady-state traffic so faults can be injected and observed.
 
 ### How It Works
 

@@ -1,4 +1,4 @@
-# Lab 1 — Manual Chaos Experiments
+# Lab 1 - Manual Chaos Experiments
 
 ## Objective
 
@@ -51,7 +51,7 @@ kubectl get svc frontend -n oranje-markt    # Get frontend external IP
 
 ---
 
-## Challenge 1 — Explore the Environment & Define Steady State
+## Challenge 1 - Explore the Environment & Define Steady State
 
 **Goal:** Familiarize yourself with the deployed Oranje Markt application and observability stack. Define measurable steady-state metrics before you start breaking things.
 
@@ -69,7 +69,7 @@ kubectl get svc frontend -n oranje-markt    # Get frontend external IP
 - Verify all pods are running: `kubectl get pods -n oranje-markt`
 - Browse the app: view products, search, add to cart
 - Define at least 3 steady-state metrics (e.g., API response time, error rate, pod status)
-- Document your steady state — this is your baseline for all experiments
+- Document your steady state - this is your baseline for all experiments
 
 **What to observe:**
 
@@ -89,7 +89,7 @@ kubectl get svc frontend -n oranje-markt    # Get frontend external IP
 
 ---
 
-## Challenge 2 — Kill a Pod (Self-Healing)
+## Challenge 2 - Kill a Pod (Self-Healing)
 
 **Goal:** Delete the backend pod and observe Kubernetes self-healing. Measure how long the application is unavailable and whether it recovers automatically.
 
@@ -115,7 +115,7 @@ kubectl get svc frontend -n oranje-markt    # Get frontend external IP
 **Hints:**
 
 - Run `kubectl get pods -n oranje-markt -w` in a separate terminal to watch pod lifecycle
-- The backend has an init container that runs database migrations — this adds to restart time
+- The backend has an init container that runs database migrations - this adds to restart time
 - Try accessing the frontend during the restart to see the user experience
 - Check `kubectl get events -n oranje-markt --sort-by='.lastTimestamp'` for the timeline
 
@@ -123,7 +123,7 @@ kubectl get svc frontend -n oranje-markt    # Get frontend external IP
 
 ---
 
-## Challenge 3 — Kill the Database
+## Challenge 3 - Kill the Database
 
 **Goal:** Delete the PostgreSQL pod and observe the cascading impact on the entire application. Understand the difference between stateless and stateful pod failures.
 
@@ -134,7 +134,7 @@ kubectl get svc frontend -n oranje-markt    # Get frontend external IP
 - Observe the backend: does it crash? Return errors? Queue requests?
 - Monitor Grafana: error rate spikes? Backend pod restarts?
 - After PostgreSQL restarts, does the backend automatically reconnect?
-- Bonus: delete the PostgreSQL PVC too (`kubectl delete pvc postgres-data -n oranje-markt`) — what happens now?
+- Bonus: delete the PostgreSQL PVC too (`kubectl delete pvc postgres-data -n oranje-markt`) - what happens now?
 
 **What to observe:**
 
@@ -147,7 +147,7 @@ kubectl get svc frontend -n oranje-markt    # Get frontend external IP
 **Hints:**
 
 - `kubectl logs -n oranje-markt -l app=backend -f` to stream backend logs
-- PostgreSQL is a StatefulSet — pods have stable names (`postgres-0`)
+- PostgreSQL is a StatefulSet - pods have stable names (`postgres-0`)
 - The PVC survives pod deletion but NOT PVC deletion
 - After deleting the PVC, you may need to re-run database migrations
 
@@ -155,13 +155,13 @@ kubectl get svc frontend -n oranje-markt    # Get frontend external IP
 
 ---
 
-## Challenge 4 — Simulate Network Disruption
+## Challenge 4 - Simulate Network Disruption
 
 **Goal:** Disrupt communication between the backend and database without killing any pods. Observe how the application handles network-level failures.
 
 **Requirements:**
 
-- Approach 1 — Wrong DNS: Edit the backend deployment to change the `DATABASE_URL` environment variable to point to a non-existent host
+- Approach 1 - Wrong DNS: Edit the backend deployment to change the `DATABASE_URL` environment variable to point to a non-existent host
   ```bash
   # Change it to a wrong value (this will cause connection failures)
   kubectl set env deployment/backend -n oranje-markt DATABASE_URL="postgresql://oranje:oranje123@wrong-host:5432/oranjedb"
@@ -171,7 +171,7 @@ kubectl get svc frontend -n oranje-markt    # Get frontend external IP
 - Observe: does the backend crash or return errors gracefully?
 - Restore the original configuration after testing
 
-- Approach 2 — Actual disruption options - for ex.:  Break the Service selector or add a NetworkPolicy that blocks traffic from backend to database (requires additional setup)
+- Approach 2 - Actual disruption options - for ex.:  Break the Service selector or add a NetworkPolicy that blocks traffic from backend to database (requires additional setup)
 
 **What to observe:**
 
@@ -183,7 +183,7 @@ kubectl get svc frontend -n oranje-markt    # Get frontend external IP
 **Hints:**
 
 - Save the original DATABASE_URL before changing it
-- The backend's readiness probe hits `/api/health` — does it still pass when the DB is unreachable?
+- The backend's readiness probe hits `/api/health` - does it still pass when the DB is unreachable?
 - `kubectl rollout undo deployment/backend -n oranje-markt` can restore the previous config.
 - Watch both the backend logs and the frontend behavior simultaneously
 
@@ -191,7 +191,7 @@ kubectl get svc frontend -n oranje-markt    # Get frontend external IP
 
 ---
 
-## Challenge 5 — Drain a Node
+## Challenge 5 - Drain a Node
 
 **Goal:** Simulate a node failure by draining it. Observe how Kubernetes reschedules all workloads and how long until full recovery.
 
@@ -214,8 +214,8 @@ kubectl get svc frontend -n oranje-markt    # Get frontend external IP
 **Hints:**
 
 - Use `-o wide` to see node assignments
-- The drain will fail if it violates a PDB — but we don't have PDBs yet (that's a Lab 3 improvement!)
-- > **Note:** AKS system components (coredns, metrics-server, konnectivity-agent) have their own PDBs. The drain command may take 2+ minutes as it retries evictions for these system pods. This is normal — be patient.
+- The drain will fail if it violates a PDB - but we don't have PDBs yet (that's a Lab 3 improvement!)
+- > **Note:** AKS system components (coredns, metrics-server, konnectivity-agent) have their own PDBs. The drain command may take 2+ minutes as it retries evictions for these system pods. This is normal - be patient.
 - If you only have 1 node with capacity, pods may stay in Pending
 - `kubectl get events --sort-by='.lastTimestamp'` shows the drain and reschedule timeline
 
@@ -223,7 +223,7 @@ kubectl get svc frontend -n oranje-markt    # Get frontend external IP
 
 ---
 
-## Challenge 6 — Load Test to Breaking Point
+## Challenge 6 - Load Test to Breaking Point
 
 **Goal:** Generate increasing load on the Oranje Markt application until it breaks. Identify the bottleneck and document the failure mode.
 
@@ -247,12 +247,25 @@ kubectl get svc frontend -n oranje-markt    # Get frontend external IP
 
   **PowerShell:**
   ```powershell
+  # Load test with increasing intensity - product listing, search, and high concurrency
   foreach ($i in 2..15) {
     kubectl run "load-test-$i" --image=busybox --restart=Never --labels=chaos=load-test -n oranje-markt `
       -- sh -c 'while true; do wget -q -O- http://backend:4000/api/products; done'
   }
+
+  foreach ($i in 16..30) {
+  kubectl run "load-test-$i" --image=busybox --restart=Never --labels=chaos=load-test -n oranje-markt `
+    -- sh -c 'while true; do wget -q -O- "http://backend:4000/api/products?search=tomato&limit=100"; done'
+  }
+
+  foreach ($i in 31..60) {
+    kubectl run "load-test-$i" --image=busybox --restart=Never --labels=chaos=load-test -n oranje-markt `
+      -- sh -c 'while true; do wget -q -O- "http://backend:4000/api/products?limit=1000"; done'
+  }
+
   ```
 - Monitor Grafana: CPU, memory, request rate, error rate
+  - **Tip:** Open the **Oranje Markt - Backend Load & Saturation** dashboard (folder *Oranje Markt*). The *CPU usage vs 500m limit* and *Event-loop lag* panels are the clearest saturation signals - when the CPU line pins flat against the dashed 500m limit and lag climbs above ~50 ms, the backend is being CPU-throttled even if response codes still look healthy.
 - Identify the breaking point: at what load level does the app fail?
 
 **What to observe:**
@@ -267,7 +280,7 @@ kubectl get svc frontend -n oranje-markt    # Get frontend external IP
 
 - Start with 1 load generator pod, then scale to 5, 10, 20
 - Watch `kubectl top pods -n oranje-markt` in real-time
-- The backend has `512Mi` memory limit and `500m` CPU limit — these are your boundaries
+- The backend has `512Mi` memory limit and `500m` CPU limit - these are your boundaries
 - PostgreSQL with a single connection can become a bottleneck quickly
 - Clean up load test pods after: `kubectl delete pod -n oranje-markt -l chaos=load-test`
 
@@ -275,7 +288,7 @@ kubectl get svc frontend -n oranje-markt    # Get frontend external IP
 
 ---
 
-## Challenge 7 — Cleanup
+## Challenge 7 - Cleanup
 
 Remove any temporary resources and restore the environment to its original state.
 
@@ -317,14 +330,14 @@ kubectl top pods -n oranje-markt
 |---------|------------------------------|
 | **Steady State** | Always define and measure baseline before injecting chaos |
 | **Pod Self-Healing** | Kubernetes automatically restarts failed pods, but there's downtime with single replicas |
-| **Stateful Failures** | Database pods are harder to recover — PVCs persist but are a single point of failure |
+| **Stateful Failures** | Database pods are harder to recover - PVCs persist but are a single point of failure |
 | **Network Disruption** | Applications need resilience patterns for connectivity failures |
 | **Node Drain** | Kubernetes reschedules workloads, but without PDBs, all pods on a node can be evicted at once |
-| **Load Testing** | Every system has a breaking point — resource limits and replica count determine capacity |
+| **Load Testing** | Every system has a breaking point - resource limits and replica count determine capacity |
 
 ## Expected Recovery Timings
 
-Use these as a reference — your results may vary depending on cluster size and image pull times:
+Use these as a reference - your results may vary depending on cluster size and image pull times:
 
 | Experiment | Expected Recovery Time | Notes |
 |------------|----------------------|-------|

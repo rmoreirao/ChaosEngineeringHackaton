@@ -174,8 +174,8 @@ playwright-cli show
 ```
 
 The dashboard shows:
-- **Session grid** — all active sessions with live screencast preview, session name, URL, and page title. Click any session to zoom in.
-- **Session detail** — live view of the selected session with tab bar, navigation controls, and full remote control. Click the viewport to take over input; press Escape to release.
+- **Session grid** - all active sessions with live screencast preview, session name, URL, and page title. Click any session to zoom in.
+- **Session detail** - live view of the selected session with tab bar, navigation controls, and full remote control. Click the viewport to take over input; press Escape to release.
 
 ## Open parameters
 ```bash
