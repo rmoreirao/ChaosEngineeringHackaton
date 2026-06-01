@@ -24,9 +24,9 @@ This lab follows the structured chaos engineering process:
 │  Understand risk, impact, and probability of failure modes          │
 │                          ↓                                          │
 │  Phase 1: Generate Hypotheses                                       │
-│  "If X fails, then Y should happen because Z"                      │
+│  "If X fails, then Y should happen because Z"                       │
 │                          ↓                                          │
-│  Phase 2: Run the Experiment                                        │
+│  Phase 2: Define and Run the Experiment                             │
 │  ┌─────────────────────────────────────────────────────────────┐    │
 │  │  2.1 Define Steady State                                    │    │
 │  │  Instrument, measure, establish baselines                   │    │
